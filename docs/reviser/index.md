@@ -51,6 +51,13 @@ Tous les outils pour réviser **avec le contenu des cours** (rien d'autre). Ta p
 
 </div>
 
+## :material-cellphone-arrow-down: L'appli sur ton téléphone
+
+Le site s'installe comme une vraie appli : icône sur l'écran d'accueil, plein écran, et **tout marche hors ligne** (cours, fiches, quiz, simulateur…).
+
+<div id="app-installer"></div>
+
 !!! tip "Astuces"
     - Le bouton :material-palette: en haut change le thème (néon, ambre, cyberpunk, matrix).
+    - Le bouton :material-cellphone-arrow-down: en haut installe l'appli (s'il n'apparaît pas, voir juste au-dessus).
     - Il y a un terminal caché quelque part… essaie la touche ++"²"++ 😉

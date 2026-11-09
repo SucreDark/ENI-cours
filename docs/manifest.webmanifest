@@ -1,0 +1,24 @@
+{
+  "name": "Mes cours ENI",
+  "short_name": "Cours ENI",
+  "description": "Mes cours ENI, fiches, quiz, flashcards et simulateur, même hors ligne",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0e14",
+  "theme_color": "#0a0e14",
+  "icons": [
+    { "src": "assets/appli/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/appli/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/appli/icone-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/appli/icone-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Quiz", "url": "./reviser/quiz.html" },
+    { "name": "Flashcards", "url": "./reviser/flashcards.html" },
+    { "name": "Simulateur", "url": "./reviser/simulateur.html" },
+    { "name": "Fiches mémo", "url": "./fiches/index.html" }
+  ]
+}

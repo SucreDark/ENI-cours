@@ -182,6 +182,47 @@
     appliquerTheme(store.get("theme", "neon"));
   }
 
+
+  // ---------- Appli téléphone (PWA) : bouton « Installer » + aide ----------
+  var invite = null;
+  var installee = function () { return (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true; };
+  var estIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  function lancerInstall() {
+    if (invite) {
+      invite.prompt();
+      invite.userChoice.then(function (c) { if (c.outcome === "accepted") toast("📲 Appli installée !"); invite = null; majInstall(); });
+    } else if (estIOS) {
+      toast("📲 Sur iPhone : touche <b>Partager</b> ⬆️ puis <b>Sur l'écran d'accueil</b>");
+    } else {
+      toast("📲 Menu du navigateur <b>⋮</b> → <b>Installer l'application</b> (ou « Ajouter à l'écran d'accueil »)");
+    }
+  }
+  function majInstall() {
+    var b = document.querySelector(".eni-install-btn");
+    if (b) b.hidden = installee() || !(invite || estIOS);
+    var z = document.getElementById("app-installer"); if (!z) return;
+    if (!/^https?:$/.test(location.protocol)) {
+      z.innerHTML = '<p class="aide">L\'appli s\'installe depuis le site en ligne (pas depuis le fichier ouvert en double-clic).</p>'; return;
+    }
+    if (installee()) { z.innerHTML = '<p>✅ Tu es dans l\'appli. Elle marche aussi <b>sans réseau</b> ; elle se met à jour toute seule quand tu as internet.</p>'; return; }
+    z.innerHTML = '<div class="exo-actions"><button type="button" class="md-button md-button--primary">📲 Installer l\'appli</button></div>' +
+      '<ul><li><b>Android (Chrome, Edge, Samsung)</b> : bouton ci-dessus, ou menu <b>⋮</b> → <b>Installer l\'application</b>.</li>' +
+      '<li><b>iPhone / iPad (Safari)</b> : bouton <b>Partager</b> ⬆️ → <b>Sur l\'écran d\'accueil</b>.</li>' +
+      '<li><b>PC (Chrome, Edge)</b> : icône d\'installation à droite de la barre d\'adresse.</li></ul>';
+    z.querySelector("button").onclick = lancerInstall;
+  }
+  window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); invite = e; majInstall(); });
+  window.addEventListener("appinstalled", function () { invite = null; majInstall(); });
+  function boutonInstall() {
+    var cible = document.querySelector(".eni-theme-btn"); if (!cible || document.querySelector(".eni-install-btn")) return;
+    var b = h("button", "md-header__button md-icon eni-install-btn",
+      '<svg viewBox="0 0 24 24"><path d="M17 1H7c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2m0 18H7V5h10zm-1-6h-3V8h-2v5H8l4 4z"/></svg>');
+    b.type = "button"; b.title = "Installer l'appli sur ce téléphone / PC"; b.setAttribute("aria-label", b.title);
+    b.onclick = lancerInstall; b.hidden = true;
+    cible.parentNode.insertBefore(b, cible);
+    majInstall();
+  }
+
   // ---------- Carnet de TP (en bas de chaque module) ----------
   function carnet() {
     if (!/\/cours\/[^\/]+\/(?!index\.html)[^\/]+\.html$/.test(location.pathname)) return;
@@ -441,6 +482,6 @@
     badges: BADGES, verifierBadges: verifierBadges, themes: THEMES, appliquerTheme: appliquerTheme, matrix: matrix
   };
 
-  function init() { boutonTheme(); carnet(); verifierBadges(); }
+  function init() { boutonTheme(); boutonInstall(); carnet(); verifierBadges(); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();

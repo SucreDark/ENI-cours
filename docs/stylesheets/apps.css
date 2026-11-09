@@ -282,3 +282,4 @@ body[data-md-color-scheme="slate"]:not([data-cours]) .exo-btn:not(.sec):not(.ok)
 .eni-simu .eni-term-sortie > div { min-height: 1.45em; }
 .eni-simu:not([data-os="linux"]) .eni-term-sortie > div { white-space: pre; }
 .eni-simu .eni-term-sortie > div.err, .eni-simu .eni-term-sortie > div.cmd { white-space: pre-wrap; }
+.eni-install-btn[hidden]{display:none}
