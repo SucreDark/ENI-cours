@@ -1,3 +1,362 @@
+/* Simulateur de terminal : moteur PowerShell puis bash / cmd */
+/* ============================================================
+   Simulateur : moteur PowerShell (onglet « Windows – PowerShell »)
+   Mini-PowerShell orienté objet : cmdlets du cours (Systèmes clients M3 et M11),
+   pipeline |, Select-Object, Where-Object (simple et -FilterScript), Format-*,
+   redirections > >> 2> 2>$null 2>&1, alias.
+   Utilisé par simu.js via window.ENI_SIMU_PS(api).
+   ============================================================ */
+(function () {
+  "use strict";
+
+  // ---------- Missions (contenu des cours uniquement) ----------
+  function sel(c) { // propriétés demandées dans Select-Object
+    var m = c.match(/select-object ([^|]+)/); if (!m) return [];
+    return m[1].replace(/-property /, "").split(/[ ,]+/).filter(Boolean);
+  }
+  function aProps(c, liste) { var p = sel(c); return liste.every(function (x) { return p.indexOf(x) !== -1; }); }
+  var MISSIONS = [
+    { id: "ver", txt: "Affiche la version de PowerShell.", ind: "Systèmes clients M3, exercice 2", sol: "$PSVersionTable", ok: function (c) { return c === "$psversiontable" || c === "get-host"; } },
+    { id: "ex", txt: "Affiche seulement les exemples de l'aide de Get-Service.", ind: "Systèmes clients M3 : l'aide de PowerShell", sol: "Get-Help -Examples Get-Service", ok: function (c) { return /^get-help /.test(c) && / -examples?( |$)/.test(c) && /get-service/.test(c); } },
+    { id: "gci", txt: "Affiche le contenu du dossier C:\\Users.", ind: "Systèmes clients M3, exercice 3", sol: "Get-ChildItem -Path C:\\Users", ok: function (c) { return /^get-childitem( -path)? c:\\users\\?$/.test(c); } },
+    { id: "alias", txt: "Affiche les alias (pour trouver ceux de Get-ChildItem).", ind: "Systèmes clients M3 : Get-Alias", sol: "Get-Alias", ok: function (c) { return /^get-alias/.test(c); } },
+    { id: "gc", txt: "Affiche le contenu du fichier C:\\PowerShell\\Intro.txt, puis va à la racine de C:\\.", ind: "Systèmes clients M3, exercice 4", sol: "Get-Content C:\\PowerShell\\Intro.txt  puis  Set-Location C:\\", ok: function (c, s) { return s.luIntro && s.cwd === "C:\\"; } },
+    { id: "cmd", txt: "Trouve toutes les cmdlets qui créent quelque chose lié aux utilisateurs.", ind: "Systèmes clients M3, exercice 5 (Get-Command + jokers)", sol: "Get-Command new-*user*", ok: function (c) { return /^get-command new-\*user\*$/.test(c); } },
+    { id: "date", txt: "Affiche le numéro du jour dans l'année.", ind: "Systèmes clients M11, exercice 1", sol: "Get-Date | Select DayOfYear", ok: function (c) { return /^get-date \| select-object/.test(c) && aProps(c, ["dayofyear"]); } },
+    { id: "net", txt: "Affiche le nom, le statut et la vitesse des cartes réseau, uniquement celles qui sont « Up ».", ind: "Systèmes clients M11 : pipeline + filtrage basique", sol: "Get-NetAdapter | Select Name,Status,LinkSpeed | Where Status -like Up", ok: function (c, s) { return /^get-netadapter/.test(c) && aProps(c, ["name", "status", "linkspeed"]) && /where-object .*status -(c?like|c?eq) ["']?up/.test(c); } },
+    { id: "svc", txt: "Affiche les services démarrés ET en démarrage automatique (nom et statut).", ind: "Systèmes clients M11, exercice 5 (-FilterScript, $_ et -and)", sol: 'Get-Service | Where -FilterScript { $_.Status -like "Running" -and $_.StartType -like "Automatic" } | Select Name,Status', ok: function (c) { return /^get-service/.test(c) && /where-object/.test(c) && /running/.test(c) && /automatic/.test(c) && / -and /.test(c) && aProps(c, ["name", "status"]); } },
+    { id: "smb", txt: "Affiche le nom et le chemin des partages administratifs.", ind: "Systèmes clients M11, exercice 6 (joker *$)", sol: "Get-SmbShare | Select Name,Path | Where Name -like *$", ok: function (c) { return /^get-smbshare/.test(c) && aProps(c, ["name", "path"]) && /where-object .*name -c?like ["']?\*\$/.test(c); } },
+    { id: "redir", txt: "Enregistre la liste des utilisateurs locaux dans C:\\temp\\LocalUserList.txt, puis affiche ce fichier.", ind: "Systèmes clients M11 : la redirection de flux", sol: "Get-LocalUser > C:\\temp\\LocalUserList.txt  puis  Get-Content C:\\temp\\LocalUserList.txt", ok: function (c, s) { return s.redirUsers && /^get-content c:\\temp\\localuserlist\.txt$/.test(c); } }
+  ];
+
+  // ---------- Données simulées ----------
+  var GB = 1073741824;
+  var DATA = {
+    process: [["svchost", 1452, 1.2, 812], ["explorer", 4120, 25.4, 2184], ["msedge", 6532, 88.1, 1630], ["powershell", 7012, 2.3, 640], ["lsass", 704, 3.9, 1260], ["spoolsv", 2480, .5, 410], ["System", 4, 210.7, 4800]].map(function (p) { return { Handles: p[3], "CPU(s)": p[2], Id: p[1], ProcessName: p[0], Name: p[0] }; }),
+    service: [["Running", "Automatic", "Dhcp", "Client DHCP"], ["Running", "Automatic", "Dnscache", "Client DNS"], ["Running", "Automatic", "Spooler", "Spouleur d'impression"], ["Running", "Automatic", "LanmanServer", "Serveur"], ["Running", "Manual", "Netman", "Connexions réseau"], ["Stopped", "Manual", "RemoteRegistry", "Registre à distance"], ["Running", "Automatic", "mpssvc", "Pare-feu Windows Defender"], ["Stopped", "Disabled", "Fax", "Télécopie"], ["Running", "Manual", "wuauserv", "Windows Update"], ["Stopped", "Manual", "WinRM", "Gestion à distance de Windows (WS-Management)"]]
+      .map(function (s) { return { Status: s[0], Name: s[2], DisplayName: s[3], StartType: s[1] }; }),
+    netadapter: [{ Name: "Ethernet0", InterfaceDescription: "Intel(R) 82574L Gigabit Network Connection", ifIndex: 4, Status: "Up", MacAddress: "00-0C-29-3E-5B-7A", LinkSpeed: "1 Gbps" },
+      { Name: "Wi-Fi", InterfaceDescription: "Intel(R) Wi-Fi 6 AX201 160MHz", ifIndex: 7, Status: "Disconnected", MacAddress: "F4-26-79-1B-0C-22", LinkSpeed: "0 bps" },
+      { Name: "Ethernet1", InterfaceDescription: "Realtek USB GbE Family Controller", ifIndex: 12, Status: "Up", MacAddress: "00-E0-4C-68-01-9F", LinkSpeed: "100 Mbps" }],
+    localuser: [{ Name: "Administrateur", Enabled: false, Description: "Compte d'utilisateur d'administration" }, { Name: "DefaultAccount", Enabled: false, Description: "Compte utilisateur géré par le système." },
+      { Name: "Invité", Enabled: false, Description: "Compte d'utilisateur invité" }, { Name: "user", Enabled: true, Description: "" }, { Name: "WDAGUtilityAccount", Enabled: false, Description: "Compte d'utilisateur géré et utilisé par le système pour les scénarios Windows Defender Application Guard." }],
+    localgroup: [["Administrateurs", "Les membres du groupe Administrateurs disposent d'un accès complet et illimité à l'ordinateur et au domaine"], ["Utilisateurs", "Les utilisateurs ne peuvent pas effectuer de modifications accidentelles ou intentionnelles à l'échelle du système"], ["Invités", "Les membres du groupe Invités disposent par défaut du même accès que les membres du groupe Utilisateurs"], ["Utilisateurs du Bureau à distance", "Les membres de ce groupe disposent des droits nécessaires pour ouvrir une session à distance"]].map(function (g) { return { Name: g[0], Description: g[1] }; }),
+    smbshare: [{ Name: "ADMIN$", ScopeName: "*", Path: "C:\\Windows", Description: "Administration à distance" }, { Name: "C$", ScopeName: "*", Path: "C:\\", Description: "Partage par défaut" },
+      { Name: "IPC$", ScopeName: "*", Path: "", Description: "IPC distant" }, { Name: "Compta", ScopeName: "*", Path: "D:\\Partages\\Compta", Description: "" }],
+    volume: [{ DriveLetter: "C", FileSystemLabel: "", FileSystemType: "NTFS", DriveType: "Fixed", HealthStatus: "Healthy", OperationalStatus: "OK", SizeRemaining: 21.4 * GB, Size: 59.4 * GB },
+      { DriveLetter: "D", FileSystemLabel: "Donnees", FileSystemType: "NTFS", DriveType: "Fixed", HealthStatus: "Healthy", OperationalStatus: "OK", SizeRemaining: 12.6 * GB, Size: 20 * GB },
+      { DriveLetter: "E", FileSystemLabel: "Archives", FileSystemType: "ReFS", DriveType: "Fixed", HealthStatus: "Healthy", OperationalStatus: "OK", SizeRemaining: 4.2 * GB, Size: 24 * GB },
+      { DriveLetter: "", FileSystemLabel: "Réservé au système", FileSystemType: "NTFS", DriveType: "Fixed", HealthStatus: "Healthy", OperationalStatus: "OK", SizeRemaining: .2 * GB, Size: .5 * GB }],
+    firewall: [["Partage de fichiers et d'imprimantes (Demande d'écho - Trafic entrant ICMPv4)", "False", "Domain, Private", "Inbound", "Allow"], ["Bureau à distance - Mode utilisateur (TCP-In)", "False", "Any", "Inbound", "Allow"], ["Diffusion en continu sur le réseau Windows Media (UDP-In)", "True", "Private", "Inbound", "Allow"], ["Réseau principal - DNS (UDP-Out)", "True", "Any", "Outbound", "Allow"], ["Réseau principal - Protocole DHCP (DHCP-In)", "True", "Any", "Inbound", "Allow"]]
+      .map(function (r, i) { return { Name: "{" + (1000 + i) + "}", DisplayName: r[0], Enabled: r[1], Profile: r[2], Direction: r[3], Action: r[4] }; }),
+    eventlog: [[48213, 4624, "L'ouverture de session d'un compte s'est correctement déroulée."], [48212, 4672, "Privilèges spéciaux attribués à une nouvelle ouverture de session."], [48211, 4624, "L'ouverture de session d'un compte s'est correctement déroulée."], [48210, 4634, "Fermeture de session d'un compte."], [48209, 4625, "Échec d'ouverture de session d'un compte."]]
+      .map(function (e, i) { var d = new Date(Date.now() - i * 3600e3); return { Index: e[0], TimeWritten: d.toLocaleString("fr-FR"), EntryType: e[1] === 4625 ? "FailureAudit" : "SuccessAudit", Source: "Microsoft-Windows-Security-Auditing", EventID: e[1], InstanceId: e[1], Message: e[2] }; }),
+    timezone: [{ Id: "Romance Standard Time", DisplayName: "(UTC+01:00) Bruxelles, Copenhague, Madrid, Paris", StandardName: "Paris, Madrid", DaylightName: "Paris, Madrid (heure d'été)", BaseUtcOffset: "01:00:00", SupportsDaylightSavingTime: "True" }],
+    verb: [["Add", "Common"], ["Clear", "Common"], ["Copy", "Common"], ["Get", "Common"], ["New", "Common"], ["Remove", "Common"], ["Rename", "Common"], ["Set", "Common"], ["Enable", "Lifecycle"], ["Disable", "Lifecycle"], ["Start", "Lifecycle"], ["Stop", "Lifecycle"], ["Update", "Data"], ["Format", "Common"], ["Select", "Common"]].map(function (v) { return { Verb: v[0], Group: v[1] }; })
+  };
+  var CMDLETS = ["Add-LocalGroupMember", "Add-Printer", "Clear-Host", "Copy-Item", "Disable-LocalUser", "Enable-LocalUser", "Format-List", "Format-Table", "Format-Wide", "Get-Alias", "Get-ChildItem", "Get-Command", "Get-Content", "Get-Date", "Get-EventLog", "Get-Help", "Get-Host", "Get-LocalGroup", "Get-LocalGroupMember", "Get-LocalUser", "Get-Location", "Get-NetAdapter", "Get-NetFirewallRule", "Get-Printer", "Get-PrinterDriver", "Get-Process", "Get-Service", "Get-SmbShare", "Get-TimeZone", "Get-Verb", "Get-Volume", "New-Item", "New-LocalGroup", "New-LocalUser", "New-NetFirewallRule", "New-SmbShare", "Remove-Item", "Remove-LocalGroup", "Remove-LocalUser", "Remove-Printer", "Rename-LocalUser", "Select-Object", "Set-LocalUser", "Set-Location", "Update-Help", "Where-Object"];
+  var SOURCE = { LocalUser: "Microsoft.PowerShell.LocalAccounts", LocalGroup: "Microsoft.PowerShell.LocalAccounts", LocalGroupMember: "Microsoft.PowerShell.LocalAccounts", NetAdapter: "NetAdapter", NetFirewallRule: "NetSecurity", SmbShare: "SmbShare", Volume: "Storage", Printer: "PrintManagement", PrinterDriver: "PrintManagement" };
+  var ALIAS = { "?": "Where-Object", where: "Where-Object", select: "Select-Object", fl: "Format-List", ft: "Format-Table", fw: "Format-Wide", gc: "Get-Content", cat: "Get-Content", type: "Get-Content", cd: "Set-Location", sl: "Set-Location", chdir: "Set-Location", pwd: "Get-Location", gl: "Get-Location", ls: "Get-ChildItem", dir: "Get-ChildItem", gci: "Get-ChildItem", help: "Get-Help", man: "Get-Help", cls: "Clear-Host", clear: "Clear-Host", gcm: "Get-Command", gal: "Get-Alias", gsv: "Get-Service", ps: "Get-Process", gps: "Get-Process", ni: "New-Item", rm: "Remove-Item", del: "Remove-Item", copy: "Copy-Item", cp: "Copy-Item" };
+  var EXEMPLES = {
+    "get-service": "Get-Service | Where -FilterScript { $_.Status -like \"Running\" -and $_.StartType -like \"Automatic\" } | Select Name,Status",
+    "get-childitem": "Get-ChildItem -Path C:\\Users", "get-content": "Get-Content C:\\PowerShell\\Intro.txt", "get-command": "Get-Command new-*user*",
+    "get-netadapter": "Get-NetAdapter | Select Name,Status,LinkSpeed | Where Status -like Up", "get-smbshare": "Get-SmbShare | Select Name,Path | Where Name -like *$",
+    "get-date": "Get-Date | Select DayOfYear", "format-list": "Get-Service | FL -Property Name,Status,DisplayName", "format-table": "Get-TimeZone | FT -Property StandardName,BaseUtcOffset -AutoSize",
+    "format-wide": "Get-Process | FW -Property ID -Column 5", "get-localuser": "Get-LocalUser > C:\\temp\\LocalUserList.txt", "where-object": "Get-NetAdapter | Where Status -like Up",
+    "select-object": "Get-NetAdapter | Select Name,Status,LinkSpeed", "get-volume": "Get-Volume | Where -FilterScript { $_.SizeRemaining -gt 8GB -and $_.Size -lt 25GB }",
+    "get-eventlog": "Get-EventLog -LogName Security | Where EventID -eq 4624 | Select EventID,TimeWritten,Message", "get-netfirewallrule": "Get-NetFirewallRule | Where Enabled -like 'True' | Select DisplayName,Profile,Direction,Action"
+  };
+  var VUE = { // propriétés affichées par défaut (+ forme)
+    process: [["Handles", "CPU(s)", "Id", "ProcessName"], "table"], service: [["Status", "Name", "DisplayName"], "table"],
+    netadapter: [["Name", "InterfaceDescription", "ifIndex", "Status", "MacAddress", "LinkSpeed"], "table"], localuser: [["Name", "Enabled", "Description"], "table"],
+    localgroup: [["Name", "Description"], "table"], smbshare: [["Name", "ScopeName", "Path", "Description"], "table"],
+    volume: [["DriveLetter", "FileSystemLabel", "FileSystemType", "DriveType", "HealthStatus", "OperationalStatus", "SizeRemaining", "Size"], "table"],
+    firewall: [["Name", "DisplayName", "Enabled", "Profile", "Direction", "Action"], "list"], eventlog: [["Index", "TimeWritten", "EntryType", "Source", "InstanceId", "Message"], "table"],
+    timezone: [["Id", "DisplayName", "StandardName", "BaseUtcOffset"], "list"], verb: [["Verb", "Group"], "table"], command: [["CommandType", "Name", "Version", "Source"], "table"],
+    alias: [["CommandType", "Name"], "table"], date: [["DateTime"], "date"], item: [["Mode", "LastWriteTime", "Length", "Name"], "table"], kv: [["Name", "Value"], "table"]
+  };
+  var TAILLES = { Size: 1, SizeRemaining: 1 };
+
+  window.ENI_SIMU_PS = function (api) {
+    var etat = { cwd: "C:\\Users\\user", luIntro: false, redirUsers: false };
+    var FS = { "c:\\": ["PowerShell", "temp", "Users", "Windows", "Program Files"], "c:\\powershell": ["Intro.txt"], "c:\\temp": [], "c:\\users": ["Public", "user"], "c:\\users\\public": [],
+      "c:\\users\\user": ["Desktop", "Documents", "Downloads"], "c:\\users\\user\\desktop": [], "c:\\users\\user\\documents": [], "c:\\users\\user\\downloads": [], "c:\\windows": ["System32", "explorer.exe"], "c:\\windows\\system32": [], "c:\\program files": [] };
+    var FICH = { "c:\\powershell\\intro.txt": "Bienvenue dans PowerShell !\nUne cmdlet = Verbe-Nom (Get-Help, Get-Command…).\nGet-Command pour trouver, Get-Help pour comprendre.", "c:\\windows\\explorer.exe": "MZ…" };
+
+    function chemin(p) {
+      p = (p || "").replace(/^["']|["']$/g, "").replace(/\//g, "\\");
+      if (!p || p === ".") return etat.cwd;
+      var abs = /^[a-z]:/i.test(p) ? p : (p[0] === "\\" ? "C:" + p : etat.cwd.replace(/\\$/, "") + "\\" + p), parts = [];
+      abs.split("\\").forEach(function (s, i) { if (i === 0) { parts.push(s.toUpperCase()); return; } if (!s || s === ".") return; if (s === "..") { if (parts.length > 1) parts.pop(); } else parts.push(s); });
+      var r = parts.join("\\"); if (parts.length === 1) r += "\\"; return r;
+    }
+    function cle(p) { var k = p.toLowerCase().replace(/\\+$/, ""); return k.length <= 2 ? k + "\\" : k; }
+    function joindre(d, n) { return d.replace(/\\+$/, "") + "\\" + n; }
+    function nomReel(p) { // retrouve la casse d'origine
+      var parts = p.split("\\").filter(Boolean), cur = parts[0].toUpperCase();
+      for (var i = 1; i < parts.length; i++) { var l = FS[cle(cur)] || [], n = l.filter(function (x) { return x.toLowerCase() === parts[i].toLowerCase(); })[0] || parts[i]; cur = joindre(cur, n); }
+      return parts.length === 1 ? cur + "\\" : cur;
+    }
+
+    // ---------- Formatage ----------
+    function val(o, p) { var v = o[p]; if (v === undefined) { for (var k in o) if (k.toLowerCase() === p.toLowerCase()) return o[k]; return ""; } return v; }
+    function vrai(p, o) { for (var k in o) if (k.toLowerCase() === p.toLowerCase()) return k; return p; }
+    function aff(p, v) {
+      if (v === true) return "True"; if (v === false) return "False"; if (v === null || v === undefined) return "";
+      if (TAILLES[p] && typeof v === "number") return (v / GB).toFixed(2).replace(".", ",") + " GB";
+      if (typeof v === "number" && !Number.isInteger(v)) return v.toFixed(2).replace(".", ",");
+      return String(v);
+    }
+    function table(objs, props) {
+      if (!objs.length) return [];
+      var w = props.map(function (p) { return Math.max(p.length, Math.min(60, objs.reduce(function (m, o) { return Math.max(m, aff(p, val(o, p)).length); }, 0))); });
+      var l = ["", props.map(function (p, i) { return (p + " ".repeat(w[i])).slice(0, w[i]); }).join(" ").replace(/\s+$/, ""), props.map(function (p, i) { return ("-".repeat(p.length) + " ".repeat(w[i])).slice(0, w[i]); }).join(" ").replace(/\s+$/, "")];
+      objs.forEach(function (o) { l.push(props.map(function (p, i) { var s = aff(p, val(o, p)); if (s.length > w[i]) s = s.slice(0, w[i] - 3) + "..."; return (s + " ".repeat(w[i])).slice(0, w[i]); }).join(" ").replace(/\s+$/, "")); });
+      l.push(""); return l;
+    }
+    function liste(objs, props) {
+      var w = Math.max.apply(null, props.map(function (p) { return p.length; })), l = [""];
+      objs.forEach(function (o) { props.forEach(function (p) { l.push((p + " ".repeat(w)).slice(0, w) + " : " + aff(p, val(o, p))); }); l.push(""); });
+      return l;
+    }
+    function large(objs, prop, cols) {
+      cols = cols || 2; var vals = objs.map(function (o) { return aff(prop, val(o, prop)); }), w = Math.max.apply(null, vals.map(function (v) { return v.length; }).concat([4])) + 4, l = [""];
+      for (var i = 0; i < vals.length; i += cols) l.push(vals.slice(i, i + cols).map(function (v) { return (v + " ".repeat(w)).slice(0, w); }).join("").replace(/\s+$/, ""));
+      l.push(""); return l;
+    }
+    function rendu(r) {
+      if (r.text) return r.text;
+      var objs = r.objs || []; if (!objs.length) return [];
+      if (r.type === "date" && !r.props) return ["", objs[0].DateTime, ""];
+      var props = r.props || (VUE[r.type] || [Object.keys(objs[0])])[0];
+      if (r.type === "item" && !r.props) return ["", "    Répertoire : " + r.dossier, ""].concat(table(objs, props).slice(1));
+      var forme = r.props ? (props.length > 4 ? "list" : "table") : (VUE[r.type] || [0, "table"])[1];
+      return forme === "list" ? liste(objs, props) : table(objs, props);
+    }
+
+    // ---------- Comparaisons / filtres ----------
+    function nombre(v) {
+      if (typeof v === "number") return v; if (typeof v === "boolean") return null;
+      var s = String(v).trim(), m = s.match(/^(-?[\d.,]+)\s*(kb|mb|gb|tb)?$/i);
+      if (m) return parseFloat(m[1].replace(",", ".")) * ({ kb: 1024, mb: 1048576, gb: GB, tb: GB * 1024 }[(m[2] || "").toLowerCase()] || 1);
+      m = s.match(/^([\d.]+)\s*(k|m|g)?bps$/i); if (m) return parseFloat(m[1]) * ({ k: 1e3, m: 1e6, g: 1e9 }[(m[2] || "").toLowerCase()] || 1);
+      return null;
+    }
+    function comparer(a, op, b) {
+      var cs = op[0] === "c"; if (cs) op = op.slice(1);
+      if (op[0] === "i") op = op.slice(1);
+      var sa = aff("", a), sb = String(b);
+      if (op === "like" || op === "notlike") {
+        var rx = new RegExp("^" + sb.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".") + "$", cs ? "" : "i"), t = rx.test(sa);
+        return op === "like" ? t : !t;
+      }
+      var na = nombre(a), nb = nombre(b);
+      if (na !== null && nb !== null) return { eq: na === nb, ne: na !== nb, gt: na > nb, ge: na >= nb, lt: na < nb, le: na <= nb }[op];
+      if (!cs) { sa = sa.toLowerCase(); sb = sb.toLowerCase(); }
+      var c = sa < sb ? -1 : sa > sb ? 1 : 0;
+      return { eq: c === 0, ne: c !== 0, gt: c > 0, ge: c >= 0, lt: c < 0, le: c <= 0 }[op];
+    }
+    function decouper(s) { // découpe en mots en respectant les guillemets
+      var t = [], m, rx = /"([^"]*)"|'([^']*)'|(\S+)/g;
+      while ((m = rx.exec(s))) t.push(m[1] !== undefined ? m[1] : m[2] !== undefined ? m[2] : m[3]);
+      return t;
+    }
+    function condition(expr) { // $_.Prop -op val (-and|-or …)
+      var t = decouper(expr), conds = [], liens = [];
+      for (var i = 0; i < t.length;) {
+        var p = t[i].replace(/^\$(_|psitem)\./i, ""), op = (t[i + 1] || "").replace(/^-/, "").toLowerCase(), v = t[i + 2];
+        if (!op || v === undefined) throw new Error("Expression de filtre incomplète : « " + expr.trim() + " »");
+        if (v === "$true") v = "True"; if (v === "$false") v = "False";
+        conds.push([p, op, v]); i += 3;
+        if (t[i]) { liens.push(t[i].toLowerCase()); i++; }
+      }
+      return function (o) {
+        var r = comparer(val(o, conds[0][0]), conds[0][1], conds[0][2]);
+        for (var k = 1; k < conds.length; k++) { var x = comparer(val(o, conds[k][0]), conds[k][1], conds[k][2]); r = liens[k - 1] === "-or" ? (r || x) : (r && x); }
+        return r;
+      };
+    }
+
+    // ---------- Cmdlets ----------
+    function objs(type, l) { return { objs: l.map(function (o) { var c = {}; for (var k in o) c[k] = o[k]; return c; }), type: type }; }
+    function param(args, nom) { for (var i = 0; i < args.length; i++) if (args[i].toLowerCase() === "-" + nom) return args[i + 1]; return null; }
+    function positionnels(args, avecValeur) {
+      var r = []; for (var i = 0; i < args.length; i++) { if (args[i][0] === "-" && args[i].length > 1) { if ((avecValeur || []).indexOf(args[i].slice(1).toLowerCase()) !== -1) i++; continue; } r.push(args[i]); } return r;
+    }
+    function aide(nom, args) {
+      var n = CMDLETS.filter(function (c) { return c.toLowerCase() === (ALIAS[nom.toLowerCase()] || nom).toLowerCase(); })[0];
+      if (/^about_/i.test(nom)) {
+        if (/\*/.test(nom)) return ["", "Name                              Category  Module  Synopsis", "----                              --------  ------  --------", "about_Aliases                     HelpFile          Décrit comment utiliser des alias", "about_Comparison_Operators        HelpFile          Décrit les opérateurs de comparaison", "about_Pipelines                   HelpFile          Combiner des commandes dans des pipelines", "about_Redirection                 HelpFile          Rediriger la sortie vers des fichiers", ""];
+        return ["", "RUBRIQUE", "    " + nom, "", "    (simulateur) Rubrique d'aide conceptuelle. Voir le cours : Systèmes clients M11.", ""];
+      }
+      if (!n) return { err: "Get-Help : Get-Help n'a pas trouvé " + nom + " dans une rubrique d'aide." };
+      var low = n.toLowerCase(), ex = EXEMPLES[low] || n;
+      if (args.some(function (a) { return /^-examples?$/i.test(a); })) return ["", "NOM", "    " + n, "", "    -------------------------- EXEMPLE 1 --------------------------", "", "    PS C:\\> " + ex, ""];
+      if (args.some(function (a) { return /^-online$/i.test(a); })) return ["(simulateur) Ouvrirait l'aide à jour de " + n + " sur le site de Microsoft."];
+      if (args.some(function (a) { return /^-showwindow$/i.test(a); })) return ["(simulateur) Ouvrirait l'aide de " + n + " dans une fenêtre séparée."];
+      return ["", "NOM", "    " + n, "", "SYNTAXE", "    " + n + " [<paramètres>] [<CommonParameters>]", "", "ALIAS", "    " + (Object.keys(ALIAS).filter(function (a) { return ALIAS[a] === n; }).join(", ") || "Aucun(e)"), "", "REMARQUES",
+        "    Pour voir les exemples, tapez : \"get-help " + n + " -examples\".", "    Pour obtenir les informations les plus récentes, tapez : \"get-help " + n + " -online\".", ""];
+    }
+    function lister(dossier) {
+      var k = cle(dossier), l = FS[k];
+      if (!l) return null;
+      return l.map(function (n) { var p = cle(joindre(k, n)), dir = !!FS[p]; return { Mode: dir ? "d-----" : "-a----", LastWriteTime: "09/11/2026     08:" + ("0" + (n.length * 7 % 60)).slice(-2), Length: dir ? "" : (FICH[p] || "").length, Name: n }; });
+    }
+    var CMD = {
+      "get-process": function () { return objs("process", DATA.process); },
+      "get-service": function (a) { var n = positionnels(a)[0]; return objs("service", DATA.service.filter(function (s) { return !n || comparer(s.Name, "like", n); })); },
+      "get-netadapter": function () { return objs("netadapter", DATA.netadapter); },
+      "get-localuser": function () { return objs("localuser", DATA.localuser); },
+      "get-localgroup": function () { return objs("localgroup", DATA.localgroup); },
+      "get-smbshare": function () { return objs("smbshare", DATA.smbshare); },
+      "get-volume": function () { return objs("volume", DATA.volume); },
+      "get-netfirewallrule": function () { return objs("firewall", DATA.firewall); },
+      "get-timezone": function () { return objs("timezone", DATA.timezone); },
+      "get-verb": function () { return objs("verb", DATA.verb); },
+      "get-eventlog": function (a) {
+        var l = param(a, "logname") || positionnels(a, ["newest"])[0];
+        if (!l) return { err: "Get-EventLog : paramètre -LogName manquant (ex. Get-EventLog -LogName Security)." };
+        if (!/^security$/i.test(l)) return { text: ["", "(simulateur) Seul le journal Security est simulé.", ""] };
+        return objs("eventlog", DATA.eventlog);
+      },
+      "get-date": function () {
+        var d = new Date(), j = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5);
+        return { objs: [{ DateTime: d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) + " " + d.toLocaleTimeString("fr-FR"), Day: d.getDate(), DayOfWeek: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][d.getDay()], DayOfYear: j, Month: d.getMonth() + 1, Year: d.getFullYear(), Hour: d.getHours(), Minute: d.getMinutes() }], type: "date" };
+      },
+      "get-host": function () { return { text: ["", "Name             : ConsoleHost", "Version          : 5.1.19041.5129", "CurrentCulture   : fr-FR", "CurrentUICulture : fr-FR", ""] }; },
+      "$psversiontable": function () { return { objs: [["PSVersion", "5.1.19041.5129"], ["PSEdition", "Desktop"], ["PSCompatibleVersions", "{1.0, 2.0, 3.0, 4.0...}"], ["BuildVersion", "10.0.19041.5129"], ["CLRVersion", "4.0.30319.42000"], ["WSManStackVersion", "3.0"], ["PSRemotingProtocolVersion", "2.3"], ["SerializationVersion", "1.1.0.1"]].map(function (x) { return { Name: x[0], Value: x[1] }; }), type: "kv" }; },
+      "get-help": function (a) { var n = positionnels(a)[0]; if (!n) return { text: ["", "RUBRIQUE", "    Système d'aide de Windows PowerShell", "", "    Get-Help <cmdlet>, Get-Help -Examples <cmdlet>, Help about_*", ""] }; var r = aide(n, a); return r.err ? r : { text: r }; },
+      "update-help": function () { return { text: ["(simulateur) Update-Help : nécessite internet et les droits administrateur (-Force pour dépasser la limite d'une mise à jour par jour)."] }; },
+      "get-command": function (a) {
+        var verbe = param(a, "verb"), nomP = param(a, "noun"), motif = positionnels(a, ["verb", "noun"])[0];
+        var l = CMDLETS.filter(function (c) { var p = c.split("-"); return (!verbe || comparer(p[0], "like", verbe)) && (!nomP || comparer(p[1], "like", nomP)) && (!motif || comparer(c, "like", motif)); });
+        return { objs: l.map(function (c) { var src = SOURCE[c.split("-")[1]] || (/-(Item|Content|Location|ChildItem|Service|Process)$/.test(c) ? "Microsoft.PowerShell.Management" : "Microsoft.PowerShell.Utility"); return { CommandType: "Cmdlet", Name: c, Version: src === "Microsoft.PowerShell.Utility" || src === "Microsoft.PowerShell.Management" ? "3.1.0.0" : "1.0.0.0", Source: src }; }), type: "command" };
+      },
+      "get-alias": function (a) {
+        var def = param(a, "definition"), n = positionnels(a, ["definition"])[0];
+        var l = Object.keys(ALIAS).sort().filter(function (k) { return (!def || ALIAS[k].toLowerCase() === def.toLowerCase()) && (!n || comparer(k, "like", n)); });
+        return { objs: l.map(function (k) { return { CommandType: "Alias", Name: k + " -> " + ALIAS[k], Definition: ALIAS[k] }; }), type: "alias" };
+      },
+      "get-location": function () { return { text: ["", "Path", "----", etat.cwd, ""] }; },
+      "set-location": function (a) {
+        var p = param(a, "path") || positionnels(a, ["path"])[0]; if (!p) { etat.cwd = "C:\\Users\\user"; return { text: [] }; }
+        if (p === "~") p = "C:\\Users\\user";
+        var c = chemin(p); if (!FS[cle(c)]) return { err: "Set-Location : Impossible de trouver le chemin d'accès « " + c + " », car il n'existe pas." };
+        etat.cwd = nomReel(c); return { text: [] };
+      },
+      "get-childitem": function (a) {
+        var p = chemin(param(a, "path") || positionnels(a, ["path"])[0]), l = lister(p);
+        if (!l) return FICH[cle(p)] !== undefined ? { objs: [{ Mode: "-a----", LastWriteTime: "09/11/2026     08:00", Length: FICH[cle(p)].length, Name: p.split("\\").pop() }], type: "item", dossier: p.replace(/\\[^\\]+$/, "") } : { err: "Get-ChildItem : Impossible de trouver le chemin d'accès « " + p + " », car il n'existe pas." };
+        return { objs: l, type: "item", dossier: nomReel(p) };
+      },
+      "get-content": function (a) {
+        var p = param(a, "path") || positionnels(a, ["path"])[0]; if (!p) return { err: "Get-Content : paramètre -Path manquant." };
+        var c = chemin(p), k = cle(c);
+        if (FICH[k] === undefined) return { err: "Get-Content : Impossible de trouver le chemin d'accès « " + c + " », car il n'existe pas." };
+        if (k === "c:\\powershell\\intro.txt") etat.luIntro = true;
+        return { text: FICH[k].split("\n") };
+      },
+      "clear-host": function () { return { clear: true }; },
+      "select-object": function (a, entree) {
+        if (!entree || !entree.objs) return { err: "Select-Object : aucun objet en entrée (utilise le pipeline |)." };
+        var first = param(a, "first"), props = positionnels(a, ["first", "last"]).join(",").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+        var l = entree.objs.slice(0, first ? +first : undefined);
+        if (!props.length) return { objs: l, type: entree.type, props: entree.props };
+        if (props.length === 1 && props[0] === "*") { var tous = Object.keys(l[0] || {}); return { objs: l, type: entree.type, props: tous }; }
+        var vrais = props.map(function (p) { return l[0] ? vrai(p, l[0]) : p; });
+        return { objs: l.map(function (o) { var n = {}; vrais.forEach(function (p) { n[p] = val(o, p); }); return n; }), type: entree.type, props: vrais };
+      },
+      "where-object": function (a, entree, brut) {
+        if (!entree || !entree.objs) return { err: "Where-Object : aucun objet en entrée (utilise le pipeline |)." };
+        var m = brut.match(/\{(.*)\}/), f;
+        try { f = m ? condition(m[1]) : condition(a.join(" ").replace(/^-property /i, "")); } catch (e) { return { err: "Where-Object : " + e.message }; }
+        return { objs: entree.objs.filter(f), type: entree.type, props: entree.props };
+      },
+      "format-list": function (a, entree) { if (!entree || !entree.objs) return { text: [] }; var p = positionnels(a).join(",").split(",").filter(Boolean); if (!p.length) p = entree.props || (VUE[entree.type] || [Object.keys(entree.objs[0] || {})])[0]; if (p[0] === "*") p = Object.keys(entree.objs[0] || {}); p = p.map(function (x) { return entree.objs[0] ? vrai(x, entree.objs[0]) : x; }); return { text: liste(entree.objs, p) }; },
+      "format-table": function (a, entree) { if (!entree || !entree.objs) return { text: [] }; var p = positionnels(a).join(",").split(",").filter(Boolean); if (!p.length) p = entree.props || (VUE[entree.type] || [Object.keys(entree.objs[0] || {})])[0]; if (p[0] === "*") p = Object.keys(entree.objs[0] || {}); p = p.map(function (x) { return entree.objs[0] ? vrai(x, entree.objs[0]) : x; }); return { text: table(entree.objs, p) }; },
+      "format-wide": function (a, entree) { if (!entree || !entree.objs) return { text: [] }; var p = positionnels(a, ["column"])[0] || (entree.props || (VUE[entree.type] || [["Name"]])[0])[0]; return { text: large(entree.objs, entree.objs[0] ? vrai(p, entree.objs[0]) : p, +param(a, "column") || 2) }; }
+    };
+
+    // ---------- Normalisation (pour les missions) ----------
+    function etapes(ligne) {
+      var r = [], cur = "", q = null, acc = 0;
+      for (var i = 0; i < ligne.length; i++) {
+        var ch = ligne[i];
+        if (q) { if (ch === q) q = null; cur += ch; continue; }
+        if (ch === '"' || ch === "'") { q = ch; cur += ch; continue; }
+        if (ch === "{") acc++; if (ch === "}") acc--;
+        if (ch === "|" && !acc) { r.push(cur.trim()); cur = ""; continue; }
+        cur += ch;
+      }
+      r.push(cur.trim()); return r;
+    }
+    function normaliser(ligne) {
+      return etapes(ligne).map(function (e) {
+        var t = e.split(/\s+/), n = t[0].toLowerCase(); n = (ALIAS[n] || n).toLowerCase();
+        return [n].concat(t.slice(1)).join(" ").toLowerCase().replace(/\s*,\s*/g, ",").replace(/^(select-object|format-list|format-table) -property /, "$1 ");
+      }).join(" | ");
+    }
+
+    // ---------- Exécution ----------
+    function executer(ligne) {
+      // redirections (à la fin de la ligne)
+      var redir = null, err2 = null, m;
+      if ((m = ligne.match(/\s+2>&1\s*$/))) { err2 = "joint"; ligne = ligne.slice(0, m.index); }
+      if ((m = ligne.match(/\s+2>\s*\$null\s*$/i))) { err2 = "null"; ligne = ligne.slice(0, m.index); }
+      if ((m = ligne.match(/\s+2(>>?)\s*(\S+)\s*$/))) { err2 = { f: m[2], ajout: m[1] === ">>" }; ligne = ligne.slice(0, m.index); }
+      if ((m = ligne.match(/\s+1?(>>?)\s*(\S+)(\s+2>&1)?\s*$/))) { redir = { f: m[2], ajout: m[1] === ">>" }; if (m[3]) err2 = "joint"; ligne = ligne.slice(0, m.index); }
+      var et = etapes(ligne), res = null, sortie = [], erreur = null, premier = "";
+      for (var i = 0; i < et.length; i++) {
+        var toks = decouper(et[i]); if (!toks.length) continue;
+        var n = toks[0].toLowerCase(); n = (ALIAS[n] || n).toLowerCase(); if (!i) premier = n;
+        if (toks.slice(1).some(function (x) { return x === "-?"; })) { res = { text: aide(toks[0], []) }; continue; }
+        var f = CMD[n];
+        if (!f) {
+          if (CMDLETS.some(function (c) { return c.toLowerCase() === n; })) { erreur = toks[0] + " : (simulateur) cette cmdlet existe mais n'est pas simulée ici. Essaie Get-Help " + toks[0] + "."; break; }
+          if (/^\(get-/.test(n)) { erreur = "(simulateur) La syntaxe (Get-…).Propriété n'est pas simulée : utilise | Select Propriété."; break; }
+          erreur = toks[0] + " : Le terme « " + toks[0] + " » n'est pas reconnu comme nom d'applet de commande, fonction, fichier de script ou programme exécutable.\nVérifiez l'orthographe du nom, ou si un chemin d'accès existe, vérifiez que le chemin d'accès est correct et réessayez.";
+          break;
+        }
+        res = f(toks.slice(1), res, et[i]);
+        if (res.err) { erreur = res.err; break; }
+        if (res.clear) return { clear: true };
+      }
+      if (!erreur && res) sortie = rendu(res);
+      var errLignes = erreur ? erreur.split("\n") : [];
+      function ecrireFichier(r, lignes) {
+        var c = chemin(r.f), dossier = cle(c.replace(/\\[^\\]+$/, "") || "C:\\");
+        if (!FS[dossier] && !FS[dossier + "\\"]) return "out-file : Une partie du chemin d'accès « " + c + " » est introuvable.";
+        var k = cle(c), nom = c.split("\\").pop();
+        if (FICH[k] === undefined) (FS[dossier] || FS[dossier + "\\"]).push(nom);
+        FICH[k] = (r.ajout && FICH[k] ? FICH[k] + "\n" : "") + lignes.join("\n");
+        return null;
+      }
+      var aff = [];
+      if (redir) {
+        var contenu = sortie.concat(err2 === "joint" ? errLignes : []), e = ecrireFichier(redir, contenu);
+        if (e) aff.push({ t: e, err: true });
+        else if (premier === "get-localuser" && cle(chemin(redir.f)) === "c:\\temp\\localuserlist.txt" && !erreur) etat.redirUsers = true;
+        if (erreur && err2 !== "joint" && err2 !== "null" && !err2) aff.push({ t: errLignes.join("\n"), err: true });
+      } else {
+        sortie.forEach(function (l) { aff.push({ t: l }); });
+        if (erreur) {
+          if (err2 === "null") { /* rien */ }
+          else if (err2 && err2.f) { var e2 = ecrireFichier(err2, errLignes); if (e2) aff.push({ t: e2, err: true }); }
+          else aff.push({ t: errLignes.join("\n"), err: true });
+        }
+      }
+      return { lignes: aff, norm: normaliser(ligne.trim()) };
+    }
+
+    return {
+      missions: MISSIONS, etat: etat,
+      prompt: function () { return "PS " + etat.cwd + "> "; },
+      accueil: "Windows PowerShell\nCopyright (C) Microsoft Corporation. Tous droits réservés.\n\nTape les cmdlets vues en cours (Get-Help, Get-Command…). « aide » pour l'aide du simulateur.",
+      aide: "Cmdlets simulées : Get-Help, Get-Command, Get-Alias, Get-Verb, $PSVersionTable, Get-Host, Get-ChildItem, Get-Content, Set-Location, Get-Location,\nGet-Process, Get-Service, Get-NetAdapter, Get-LocalUser, Get-LocalGroup, Get-SmbShare, Get-Volume, Get-NetFirewallRule, Get-EventLog, Get-TimeZone, Get-Date,\nSelect-Object, Where-Object (simple ou -FilterScript { }), Format-List/Table/Wide, redirections > >> 2> 2>$null 2>&1, Clear-Host. Alias : select, where, ?, fl, ft, fw, gc, cd, ls, dir, gci…",
+      executer: executer, normaliser: normaliser, cmdlets: CMDLETS.concat(Object.keys(ALIAS), ["$PSVersionTable"])
+    };
+  };
+})();
 /* ============================================================
    Simulateur de terminal (page Réviser > Simulateur)
    Faux terminal Linux (bash) et Windows (cmd) avec des sorties réalistes
@@ -10,6 +369,7 @@
   // ---------------- Missions ----------------
   var MISSIONS = {
     linux: [
+      { id: "sh", txt: "Lance le Bourne shell (sh), puis reviens dans bash avec la commande compatible avec presque tous les shells.", ind: "Linux M2 : les shells, exit / logout", sol: "sh  puis  exit", ok: function (c, s) { return c === "exit" && s.quitte === "sh"; } },
       { id: "pwd", txt: "Affiche le dossier dans lequel tu te trouves.", ind: "Linux M3 : « où on est dans les dossiers »", sol: "pwd", ok: function (c) { return c === "pwd"; } },
       { id: "id", txt: "Affiche ton UID, ton GID et tes groupes.", ind: "Linux M3 : infos de groupes, UID, GID", sol: "id", ok: function (c) { return c === "id"; } },
       { id: "who", txt: "Affiche les utilisateurs connectés.", ind: "Linux M3", sol: "who", ok: function (c) { return c === "who"; } },
@@ -29,10 +389,14 @@
       { id: "ping", txt: "Envoie exactement 4 pings vers 8.8.8.8.", ind: "Réseau M5 : option -n sous Windows", sol: "ping -n 4 8.8.8.8", ok: function (c) { return /^ping -n ?4 8\.8\.8\.8$/.test(c); } },
       { id: "arp", txt: "Affiche la table ARP (correspondances IP / MAC).", ind: "Réseau M4 : ARP", sol: "arp -a", ok: function (c) { return c === "arp -a"; } },
       { id: "netstat", txt: "Affiche toutes les connexions et les ports, au format numérique.", ind: "Réseau M5 : netstat", sol: "netstat -an", ok: function (c) { return c === "netstat -an"; } },
-      { id: "tracert", txt: "Trace la route vers www.google.com sans résolution de noms, 15 sauts maximum.", ind: "Réseau M5, exercice 7", sol: "tracert /d /h 15 www.google.com", ok: function (c) { return /^tracert /.test(c) && / \/d( |$)/.test(c) && /\/h 15/.test(c) && /google\.com/.test(c); } }
+      { id: "tracert", txt: "Trace la route vers www.google.com sans résolution de noms, 15 sauts maximum.", ind: "Réseau M5, exercice 7", sol: "tracert /d /h 15 www.google.com", ok: function (c) { return /^tracert /.test(c) && / \/d( |$)/.test(c) && /\/h 15/.test(c) && /google\.com/.test(c); } },
+      { id: "nslookup", txt: "Diagnostique la résolution de noms de www.facebook.com.", ind: "Systèmes clients M7, exercice 3", sol: "nslookup www.facebook.com", ok: function (c) { return c === "nslookup www.facebook.com"; } },
+      { id: "netuser", txt: "Liste les comptes utilisateurs locaux en ligne de commande.", ind: "Systèmes clients M5 : net user / net localgroup", sol: "net user", ok: function (c) { return c === "net user"; } },
+      { id: "driverquery", txt: "Liste les pilotes installés en affichant s'ils sont signés.", ind: "Systèmes clients M9 : driverquery", sol: "driverquery /si", ok: function (c) { return /^driverquery \/si$/.test(c); } }
     ]
   };
-  window.ENI_SIMU_MISSIONS = { linux: MISSIONS.linux.length, windows: MISSIONS.windows.length };
+  if (window.ENI_SIMU_PS) MISSIONS.powershell = window.ENI_SIMU_PS({}).missions;
+  window.ENI_SIMU_MISSIONS = { linux: MISSIONS.linux.length, windows: MISSIONS.windows.length, powershell: (MISSIONS.powershell || []).length };
 
   // ---------------- Système de fichiers Linux ----------------
   var FS = {
@@ -79,7 +443,7 @@
   function appSimu(root) {
     var E = window.ENI, esc = E.esc, store = E.store;
     var os = store.get("simu:os", "linux"), etat, busy = false;
-    root.innerHTML = '<div class="eni-simu-onglets"><button type="button" data-os="linux">🐧 Linux (bash)</button><button type="button" data-os="windows">🪟 Windows (cmd)</button></div>' +
+    root.innerHTML = '<div class="eni-simu-onglets"><span class="grp">🐧 Linux</span><button type="button" data-os="linux">bash</button><span class="grp">🪟 Windows</span><button type="button" data-os="windows">cmd</button><button type="button" data-os="powershell">PowerShell</button></div>' +
       '<div class="eni-simu"><div class="eni-simu-term"><div class="eni-term-barre"><i></i><i></i><i></i><span class="titre"></span></div><div class="eni-term-sortie"></div><div class="eni-term-ligne"><span class="ps"></span><input type="text" spellcheck="false" autocomplete="off" aria-label="Commande"></div></div>' +
       '<div class="eni-simu-missions"><h4>$ missions <span class="cpt"></span></h4><ol></ol><button type="button" class="exo-btn sec b-raz">↺ Recommencer les missions</button></div></div>';
     var sortie = root.querySelector(".eni-term-sortie"), inp = root.querySelector("input"), ps = root.querySelector(".ps"), ol = root.querySelector("ol"), hist = [], hpos = 0;
@@ -89,7 +453,10 @@
       busy = true; var i = 0;
       (function suite() { if (i >= arr.length) { busy = false; if (fin) fin(); inp.focus(); return; } ecrire(arr[i++]); setTimeout(suite, delai); })();
     }
+    var psh = null;
     function prompt() {
+      if (os === "powershell") return psh.prompt();
+      if (os === "linux" && etat.shells.length) { var sh = etat.shells[etat.shells.length - 1]; return /csh/.test(sh) ? "% " : "$ "; }
       if (os === "linux") { var c = etat.cwd === "/home/user" ? "~" : etat.cwd.replace(/^\/home\/user/, "~"); return "user@debian:" + c + "$ "; }
       return etat.cwd + ">";
     }
@@ -112,17 +479,19 @@
       l.forEach(function (m) { if (!f[m.id] && m.ok(c, etat)) { f[m.id] = 1; nouv = true; E.toast("✔ Mission réussie : " + esc(m.txt)); } });
       if (nouv) {
         store.set("simu:" + os, f); majMissions(); E.stat("simu");
-        if (Object.keys(f).length === l.length) ecrire(os === "linux" ? "*** Toutes les missions Linux sont réussies ! ***" : "*** Toutes les missions Windows sont réussies ! ***", "ok");
+        if (Object.keys(f).length === l.length) ecrire("*** Toutes les missions " + { linux: "bash", windows: "cmd", powershell: "PowerShell" }[os] + " sont réussies ! ***", "ok");
       }
     }
     function demarrer(nouvelOs) {
       os = nouvelOs; store.set("simu:os", os);
-      etat = os === "linux" ? { cwd: "/home/user", routes: [], vuLog: false } : { cwd: "C:\\Users\\user", libere: false, apipa: true, ip: "169.254.73.12" };
+      if (os === "powershell") { psh = window.ENI_SIMU_PS({}); etat = psh.etat; }
+      else etat = os === "linux" ? { cwd: "/home/user", routes: [], vuLog: false, shells: [] } : { cwd: "C:\\Users\\user", libere: false, apipa: true, ip: "169.254.73.12" };
       [].forEach.call(root.querySelectorAll("[data-os]"), function (b) { b.classList.toggle("on", b.getAttribute("data-os") === os); });
       root.querySelector(".eni-simu").setAttribute("data-os", os);
-      root.querySelector(".titre").textContent = os === "linux" ? "user@debian: ~" : "Invite de commandes";
+      root.querySelector(".titre").textContent = os === "linux" ? "user@debian: ~" : os === "powershell" ? "Windows PowerShell" : "Invite de commandes";
       sortie.innerHTML = "";
-      if (os === "linux") ecrire("Debian GNU/Linux 12 debian tty1\nTape les commandes vues en cours. « help » pour l'aide du simulateur.");
+      if (os === "powershell") ecrire(psh.accueil);
+      else if (os === "linux") ecrire("Debian GNU/Linux 12 debian tty1\nTape les commandes vues en cours. « help » pour l'aide du simulateur.");
       else ecrire("Microsoft Windows [version 10.0.19045]\n(c) Microsoft Corporation. Tous droits réservés.\n\nTape les commandes vues en cours. « help » pour l'aide du simulateur.");
       majPs(); majMissions(); inp.focus();
     }
@@ -171,7 +540,7 @@
           else if (n.length === 1 && n[0] > 0) { var out = ["                            " + n[0]]; for (var mo = 0; mo < 12; mo++) out.push(calMois(mo, n[0], false)); ecrire(out.join("\n\n")); }
           else if (n.length === 2 && n[0] >= 1 && n[0] <= 12) ecrire(calMois(n[0] - 1, n[1], true));
           else ecrire("cal: mois invalide", "err"); break;
-        case "echo": ecrire(a.slice(1).join(" ").replace(/["']/g, "").replace(/\$HOME/g, "/home/user").replace(/\$(USER|LOGNAME)/g, "user").replace(/\$SHELL/g, "/bin/bash").replace(/\$PWD/g, etat.cwd).replace(/\$HOSTNAME/g, "debian").replace(/\$LANG/g, "fr_FR.UTF-8").replace(/\$PATH/g, "/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games").replace(/\$\$/g, "1234")); break;
+        case "echo": ecrire(a.slice(1).join(" ").replace(/["']/g, "").replace(/\$HOME/g, "/home/user").replace(/\$(USER|LOGNAME)/g, "user").replace(/\$SHELL/g, "/bin/bash").replace(/\$PWD/g, etat.cwd).replace(/\$HOSTNAME/g, "debian").replace(/\$LANG/g, "fr_FR.UTF-8").replace(/\$PATH/g, "/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games").replace(/\$\$/g, "1234").replace(/\$0/g, etat.shells.length ? etat.shells[etat.shells.length - 1] : "-bash")); break;
         case "ip":
           var sous = a[1] || "", reste = a.slice(2);
           if (sous === "-4") { sous = a[2]; reste = a.slice(3); }
@@ -206,7 +575,16 @@
         case "netstat": ecrire("Connexions Internet actives (serveurs et établies)\nProto Recv-Q Send-Q Adresse locale          Adresse distante        Etat\ntcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN\ntcp        0      0 192.168.1.25:22         192.168.1.50:51522      ESTABLISHED"); break;
         case "man": ecrire(a[1] ? "(simulateur) La page de manuel de « " + a[1] + " » : /mot pour chercher, n/N, h pour l'aide, q pour quitter." : "Quelle page de manuel voulez-vous ?"); break;
         case "passwd": ecrire("Changement du mot de passe pour user.\n(simulateur : rien n'est modifié)"); break;
-        case "exit": case "logout": ecrire("logout\n(simulateur : la session reste ouverte 😉)"); break;
+        case "sh": case "ksh": case "csh": case "tcsh": case "bash":
+          etat.shells.push(cmd); majPs();
+          ecrire({ sh: "(Bourne shell : prompt « $ », pas de logout ni d'historique avec les flèches)", ksh: "(Korn shell : compatible Bourne shell)", csh: "(C shell : prompt « % »)", tcsh: "(tcsh : C shell amélioré)", bash: "(nouveau bash dans le bash)" }[cmd] + "  → exit pour revenir"); break;
+        case "exit": case "logout":
+          if (etat.shells.length) {
+            var cur = etat.shells[etat.shells.length - 1];
+            if (cmd === "logout") { ecrire(cur === "sh" || cur === "ksh" ? cmd + ": 1: logout: not found" : "bash: logout: pas un shell de connexion : utilisez « exit »", "err"); break; }
+            etat.quitte = etat.shells.pop(); majPs(); break;
+          }
+          ecrire("logout\n(simulateur : la session reste ouverte 😉)"); break;
         default: ecrire("bash: " + cmd + " : commande introuvable", "err");
       }
     }
@@ -228,7 +606,28 @@
         return l.join("\n");
       };
       switch (cmd) {
-        case "help": ecrire("Commandes du simulateur : ipconfig (/all /release /renew /flushdns /displaydns /registerdns)\nping (-n -t) tracert (/d /h /w /4 /6) netstat (-a -n -an -r -e) arp (-a -d) hostname whoami cd cls ver echo"); break;
+        case "help": ecrire("Commandes du simulateur : ipconfig (/all /release /renew /flushdns /displaydns /registerdns)\nping (-n -t) tracert (/d /h /w /4 /6) netstat (-a -n -an -r -e) arp (-a -d) nslookup net (user, localgroup)\ndriverquery (/si) pnputil /enum-drivers hostname whoami cd cls ver echo powershell"); break;
+        case "nslookup":
+          if (!a[1]) { ecrire("Serveur par défaut :   box.home\nAddress:  192.168.1.1\n\n> (simulateur : précise un nom, ex. nslookup www.facebook.com)"); break; }
+          var nomH = a[1], ips = { "www.facebook.com": ["star-mini.c10r.facebook.com", "157.240.202.35", "2a03:2880:f1ff:83:face:b00c:0:25de"], "www.google.com": ["www.google.com", "142.250.179.100", "2a00:1450:4007:80c::2004"] }[nomH];
+          if (!ips) { ecrire("Serveur :   box.home\nAddress:  192.168.1.1\n\n*** box.home ne parvient pas à trouver " + nomH + " : Non-existent domain", "err"); break; }
+          ecrire("Serveur :   box.home\nAddress:  192.168.1.1\n\nRéponse ne faisant pas autorité :\nNom :    " + ips[0] + "\nAddresses:  " + ips[2] + "\n          " + ips[1] + (ips[0] !== nomH ? "\nAliases:  " + nomH : "")); break;
+        case "net":
+          if (a[1] === "user" && !a[2]) ecrire("\nComptes d'utilisateurs de \\\\DESKTOP-PC\n\n-------------------------------------------------------------------------------\nAdministrateur           DefaultAccount           Invité\nuser                     WDAGUtilityAccount\nLa commande s'est terminée correctement.");
+          else if (a[1] === "localgroup" && !a[2]) ecrire("\nAlias pour \\\\DESKTOP-PC\n\n-------------------------------------------------------------------------------\n*Administrateurs\n*Invités\n*Utilisateurs\n*Utilisateurs du Bureau à distance\nLa commande s'est terminée correctement.");
+          else if (a[1] === "help" || (a[1] === "user" || a[1] === "localgroup") && /\/add$/.test(c)) ecrire(a[1] === "help" ? "La syntaxe de cette commande est :\nNET HELP commande  (ex. net help user)" : "Erreur système 5.\n\nAccès refusé. (il faut une invite de commandes en administrateur)", a[1] === "help" ? "" : "err");
+          else if (a[1] === "user" || a[1] === "localgroup") ecrire("Le nom d'utilisateur ou de groupe est introuvable.\n\nVous obtiendrez une aide supplémentaire en entrant NET HELPMSG 2221.", "err");
+          else ecrire("La syntaxe de cette commande est :\n\nNET\n    [ ACCOUNTS | COMPUTER | CONFIG | CONTINUE | FILE | GROUP | HELP |\n      HELPMSG | LOCALGROUP | PAUSE | SESSION | SHARE | START |\n      STATISTICS | STOP | TIME | USE | USER | VIEW ]"); break;
+        case "driverquery":
+          if (/\/si/.test(c)) ecrire("\nDeviceName                     InfName      IsSigned Manufacturer\n============================== ============ ======== ============================\nIntel(R) 82574L Gigabit Netwo  net1ic64.inf TRUE     Intel\nVMware SVGA 3D                 vm3d.inf     TRUE     VMware, Inc.\nRealtek USB GbE Family Contro  oem3.inf     TRUE     Realtek\nImprimante Atelier             oem7.inf     FALSE    Fabricant inconnu");
+          else ecrire("\nNom de module Nom complet               Type de pilote  Date de liaison\n============= ======================== =============== ======================\n1394ohci      1394 OHCI Compliant Host Noyau           21/01/2003 00:00:00\nACPI          Microsoft ACPI Driver    Noyau           13/07/2027 00:00:00\ne1iexpress    Intel(R) PRO/1000 PCI Ex Noyau           24/05/2019 10:17:49\nTcpip         Pilote TCP/IP            Noyau           12/03/2021 05:20:04"); break;
+        case "pnputil":
+          if (a[1] === "/enum-drivers") ecrire("Utilitaire PnP Microsoft\n\nNom publié :        oem3.inf\nNom d'origine :     rtux64w10.inf\nNom du fournisseur : Realtek\nNom de classe :     Cartes réseau\nVersion du pilote : 10.45.1.0\nNom du signataire : Microsoft Windows Hardware Compatibility Publisher\n\nNom publié :        oem7.inf\nNom d'origine :     atelier.inf\nNom du fournisseur : Fabricant inconnu\nNom de classe :     Imprimantes");
+          else if (a[1] === "/add-driver") ecrire("Utilitaire PnP Microsoft\n\nÉchec de l'ajout du package de pilotes : Accès refusé.\n(il faut une invite de commandes en administrateur)", "err");
+          else ecrire("Utilitaire PnP Microsoft\n\nSYNTAXE :  pnputil [/enum-drivers] [/add-driver <fichier.inf>] …"); break;
+        case "command.com": case "command": ecrire("'" + cmd + "' n'est pas reconnu en tant que commande interne\nou externe, un programme exécutable ou un fichier de commandes.\n(command.com = shell des OS basés sur MS-DOS : absent de Windows 10, on utilise cmd.exe)", "err"); break;
+        case "cmd": case "cmd.exe": ecrire("Microsoft Windows [version 10.0.19045]\n(c) Microsoft Corporation. Tous droits réservés.\n(simulateur : nouveau cmd.exe dans le cmd)"); break;
+        case "powershell": case "powershell.exe": ecrire("(ouverture de l'onglet PowerShell…)"); setTimeout(function () { demarrer("powershell"); }, 500); break;
         case "ipconfig":
           var o = (a[1] || "").toLowerCase();
           if (!o) ecrire(carte(false));
@@ -290,6 +689,14 @@
       hist.push(c); hpos = hist.length;
       if (/^(clear|cls)$/i.test(c)) { sortie.innerHTML = ""; return; }
       if (c === "history") { ecrire(hist.map(function (x, i) { return ("    " + (i + 1)).slice(-5) + "  " + x; }).join("\n")); return; }
+      if (os === "powershell") {
+        if (/^(aide|help-simu)$/i.test(c)) { ecrire(psh.aide); return; }
+        if (/^exit$/i.test(c)) { ecrire("(simulateur : la console reste ouverte 😉)"); return; }
+        var rp = psh.executer(c);
+        if (rp.clear) { sortie.innerHTML = ""; return; }
+        rp.lignes.forEach(function (l) { ecrire(l.t, l.err ? "err" : ""); });
+        majPs(); verifierMissions(rp.norm); return;
+      }
       c0 = os === "windows" ? c.toLowerCase() : c;
       var a = c0.split(" ");
       var r = os === "linux" ? linux(c0, a) : windows(c0, a);
@@ -305,7 +712,7 @@
     });
     sortie.onclick = function () { inp.focus(); };
     [].forEach.call(root.querySelectorAll("[data-os]"), function (b) { b.onclick = function () { demarrer(b.getAttribute("data-os")); }; });
-    root.querySelector(".b-raz").onclick = function () { if (confirm("Remettre à zéro les missions " + (os === "linux" ? "Linux" : "Windows") + " ?")) { store.del("simu:" + os); demarrer(os); } };
+    root.querySelector(".b-raz").onclick = function () { if (confirm("Remettre à zéro les missions " + { linux: "bash", windows: "cmd", powershell: "PowerShell" }[os] + " ?")) { store.del("simu:" + os); demarrer(os); } };
     demarrer(os);
   }
 

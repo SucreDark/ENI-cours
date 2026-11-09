@@ -35,7 +35,7 @@ Tous les outils pour réviser **avec le contenu des cours** (rien d'autre). Ta p
 
 -   :material-monitor-shimmer:{ .lg } **[Simulateur](simulateur.md)**
 
-    Faux terminal Linux / Windows avec des missions.
+    Faux terminal bash, cmd et PowerShell avec des missions.
 
 -   :material-calculator-variant:{ .lg } **[Outils réseau](outils.md)**
 

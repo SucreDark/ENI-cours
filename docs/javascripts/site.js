@@ -79,6 +79,7 @@
   function toast(html, cls) {
     if (!zoneToasts) { zoneToasts = h("div", "eni-toasts"); document.body.appendChild(zoneToasts); }
     var t = h("div", "eni-toast " + (cls || ""), html); zoneToasts.appendChild(t);
+    while (zoneToasts.children.length > 3) zoneToasts.firstChild.remove();
     setTimeout(function () { t.classList.add("on"); }, 20);
     setTimeout(function () { t.classList.remove("on"); setTimeout(function () { t.remove(); }, 400); }, 4500);
   }
@@ -107,7 +108,7 @@
     { id: "exam10", ico: "📝", nom: "Admissible", desc: "Au moins 10/20 à un examen blanc", test: function (c) { return c.best >= 10; } },
     { id: "exam16", ico: "🏆", nom: "Mention très bien", desc: "Au moins 16/20 à un examen blanc", test: function (c) { return c.best >= 16; } },
     { id: "flash", ico: "🧠", nom: "Mémoire d'éléphant", desc: "20 flashcards dans la boîte 5", test: function (c) { return c.box5 >= 20; } },
-    { id: "simu", ico: "💻", nom: "Doigts de fée", desc: "Toutes les missions du simulateur (Linux et Windows)", test: function (c) { return c.simu; } },
+    { id: "simu", ico: "💻", nom: "Doigts de fée", desc: "Toutes les missions du simulateur (bash, cmd et PowerShell)", test: function (c) { return c.simu; } },
     { id: "carnet", ico: "📓", nom: "Prise de notes", desc: "Écrire dans 3 carnets de TP", test: function () { return store.keys("carnet:").length >= 3; } },
     { id: "assidu", ico: "📅", nom: "Assidu", desc: "Réviser 7 jours différents", test: function (c) { return c.jours >= 7; } },
     { id: "nuit", ico: "🌙", nom: "Noctambule", desc: "Réviser entre minuit et 5 h", test: function (c) { return !!c.s.nuit; } },
@@ -118,9 +119,9 @@
     var hist = store.get("exam:hist", []), boxes = store.get("flash:boxes", {}), box5 = 0;
     Object.keys(boxes).forEach(function (k) { if (boxes[k].b >= 5) box5++; });
     var sl = store.get("simu:linux", {}), sw = store.get("simu:windows", {});
-    var nl = (window.ENI_SIMU_MISSIONS || {}).linux, nw = (window.ENI_SIMU_MISSIONS || {}).windows;
-    var simu = store.get("simu:fini", false) || (nl && nw && Object.keys(sl).length >= nl && Object.keys(sw).length >= nw);
-    if (simu) store.set("simu:fini", true);
+    var M = window.ENI_SIMU_MISSIONS || {}, sp = store.get("simu:powershell", {});
+    var simu = store.get("simu:fini2", false) || (M.linux && M.windows && Object.keys(sl).length >= M.linux && Object.keys(sw).length >= M.windows && (!M.powershell || Object.keys(sp).length >= M.powershell));
+    if (simu) store.set("simu:fini2", true);
     return {
       p: progression(), s: store.get("stats", {}), box5: box5, simu: !!simu,
       best: hist.reduce(function (m, x) { return Math.max(m, x.note); }, -1),

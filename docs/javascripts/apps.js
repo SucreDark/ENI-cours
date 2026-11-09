@@ -321,14 +321,16 @@
     var ids = {}; D.commandes.forEach(function (c) { ids[c.cours] = 1; });
     root.innerHTML = '<div class="eni-form eni-filtres"><input type="search" class="eni-input" placeholder="🔍 Filtrer : ping, dns, cache, utilisateur…" data-r="q">' +
       '<select class="eni-select" data-r="cours"><option value="">Tous les cours</option>' + D.cours.filter(function (c) { return ids[c.id]; }).map(function (c) { return '<option value="' + c.id + '">' + esc(c.titre) + "</option>"; }).join("") + "</select>" +
-      '<select class="eni-select" data-r="os"><option value="">Windows + Linux</option><option value="win">Windows</option><option value="lin">Linux</option></select><span class="eni-compte"></span></div>' +
+      '<select class="eni-select" data-r="os"><option value="">Tous les systèmes</option><option value="lin">🐧 Linux (bash)</option><option value="win">🪟 Windows (cmd)</option><option value="ps">🪟 Windows (PowerShell)</option></select><span class="eni-compte"></span></div>' +
       '<div class="eni-table-wrap"><table class="eni-table eni-cmds"><thead><tr><th>Commande</th><th>Rôle</th><th>Module</th></tr></thead><tbody></tbody></table></div>';
     var q = root.querySelector('[data-r="q"]'), sc = root.querySelector('[data-r="cours"]'), so = root.querySelector('[data-r="os"]'), tb = root.querySelector("tbody");
     function os(c) {
       var r = E.texte(c.role);
+      if (/^(Get|Set|New|Remove|Add|Update|Format|Select|Where|Test|Enable|Disable)-[A-Z]/.test(c.texte) || /^(cmdlet|\$|Help |<cmdlet>)/.test(c.texte) || /^(FL|FT|FW)\b/.test(c.texte)) return "ps";
       if (/\(Windows\)/.test(r)) return "win"; if (/\(Linux\)/.test(r)) return "lin";
       if (c.cours === "utilisation-linux" || c.cours === "administration-linux" || c.cours === "scripting-bash") return "lin";
-      if (c.cours === "systemes-clients-microsoft" || c.cours === "microsoft-365" || c.cours === "powershell") return "win";
+      if (c.cours === "powershell") return "ps";
+      if (c.cours === "systemes-clients-microsoft" || c.cours === "microsoft-365") return "win";
       return "";
     }
     function maj() {

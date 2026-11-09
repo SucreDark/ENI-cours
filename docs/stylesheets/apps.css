@@ -192,7 +192,13 @@ a.exo-btn.sec { color: var(--md-default-fg-color); }
 .eni-dora-etapes li.fait::marker { content: "✔ "; color: #43a047; }
 
 /* Simulateur */
-.eni-simu-onglets { display: flex; gap: .3rem; }
+.eni-simu-onglets { display: flex; gap: .3rem; flex-wrap: wrap; align-items: flex-end; }
+.eni-simu-onglets .grp { font: 700 .62rem var(--md-code-font-family); color: var(--md-default-fg-color--light); padding: 0 .2rem .45rem .5rem; }
+.eni-simu-onglets .grp:first-child { padding-left: 0; }
+.eni-simu[data-os="powershell"] .eni-simu-term { background: #012456; border-color: #0a3a7a; }
+.eni-simu[data-os="powershell"] .eni-term-sortie, .eni-simu[data-os="powershell"] .eni-term-ligne input { color: #eeedf0; }
+.eni-simu[data-os="powershell"] .eni-term-ligne .ps { color: #eeedf0; }
+.eni-simu[data-os="powershell"] .eni-term-sortie .err { color: #ff6b6b; background: rgba(0,0,0,.15); }
 .eni-simu-onglets button { cursor: pointer; padding: .4rem .9rem; border-radius: .5rem .5rem 0 0; border: 1px solid var(--md-default-fg-color--lightest); border-bottom: none; background: transparent; color: var(--md-default-fg-color--light); font: 600 .7rem var(--md-code-font-family); }
 .eni-simu-onglets button.on { background: #0b0f14; color: var(--neon); }
 .eni-simu { display: grid; grid-template-columns: 1fr minmax(12rem, 17rem); gap: .8rem; }
@@ -233,7 +239,7 @@ a.exo-btn.sec { color: var(--md-default-fg-color); }
 .eni-term-ligne input { flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: #fff; font: inherit; caret-color: var(--neon); }
 
 /* Notifications */
-.eni-toasts { position: fixed; right: 1rem; bottom: 1rem; z-index: 20; display: flex; flex-direction: column; gap: .5rem; max-width: calc(100vw - 2rem); }
+.eni-toasts { position: fixed; right: 1rem; bottom: 1rem; z-index: 20; display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; max-width: min(24rem, calc(100vw - 2rem)); }
 .eni-toast { display: flex; align-items: center; gap: .6rem; padding: .6rem .9rem; border-radius: .5rem; background: #0b0f14; color: #e6edf3; font: .7rem var(--md-code-font-family); border: 1px solid var(--neon-doux); box-shadow: 0 0 18px rgba(var(--glow), .25); transform: translateX(120%); transition: transform .3s; }
 .eni-toast.on { transform: none; }
 .eni-toast .ico { font-size: 1.5rem; }
@@ -272,3 +278,7 @@ a.exo-btn.sec { color: var(--md-default-fg-color); }
 [data-md-color-scheme="slate"] .md-typeset .md-button:hover { background: var(--neon-doux); color: #000; border-color: var(--neon); box-shadow: 0 0 12px rgba(var(--glow), .35); }
 /* Boutons hors pages de cours : couleur du thème */
 body[data-md-color-scheme="slate"]:not([data-cours]) .exo-btn:not(.sec):not(.ok):not(.ko) { background: var(--neon-doux); color: #000; }
+.eni-simu .eni-term-sortie { overflow-x: auto; }
+.eni-simu .eni-term-sortie > div { min-height: 1.45em; }
+.eni-simu:not([data-os="linux"]) .eni-term-sortie > div { white-space: pre; }
+.eni-simu .eni-term-sortie > div.err, .eni-simu .eni-term-sortie > div.cmd { white-space: pre-wrap; }
