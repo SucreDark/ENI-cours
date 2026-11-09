@@ -1,0 +1,187 @@
+# ============================================================
+#  Config du site "Mes cours ENI"
+#  Tu n'as presque jamais besoin de toucher ce fichier :
+#  pour ajouter un cours, crée juste un .md dans docs/modules/<module>/
+# ============================================================
+site_name: Mes cours ENI
+site_description: Tous mes cours ENI (actuels et à venir), rangés par module
+site_author: Sucre
+use_directory_urls: false   # indispensable pour ouvrir le site en double-cliquant (sans serveur)
+
+theme:
+  name: material
+  language: fr
+  icon:
+    logo: material/console
+  font: false                  # police embarquée (stylesheets/police.css) : rien à télécharger
+  palette:                     # sombre "terminal" par défaut, clair en option
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Mode clair
+    - scheme: default
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/console
+        name: Mode terminal
+  features:
+    - navigation.tabs          # un onglet par grande rubrique en haut
+    - navigation.indexes       # la page index.md d'un dossier = page du module
+    - navigation.top           # bouton "remonter"
+    - navigation.footer        # cours précédent / suivant en bas de page
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy        # bouton "copier" sur les blocs de commandes
+    - content.tooltips         # jolies infobulles (sigles)
+
+hooks:
+  - tools/hooks.py             # régénère quiz/flashcards/commandes/glossaire/fiches + recherche hors ligne
+
+plugins:
+  - search:
+      lang: fr
+  - tags                       # étiquettes : en cours / à venir / terminé
+  - offline                    # le site généré marche sans serveur ni internet 
+
+extra_css:
+  - stylesheets/extra.css
+  - stylesheets/cours.css   # couleur + logo de chaque cours (généré)
+  - stylesheets/police.css  # JetBrains Mono embarquée
+  - stylesheets/geek.css    # thème terminal
+  - stylesheets/apps.css    # outils de révision, terminal caché, badges
+
+extra_javascript:
+  - javascripts/mermaid.min.js   # copie locale : les schémas marchent même sans internet
+  - javascripts/donnees.js       # données générées (exos, commandes, sigles…)
+  - javascripts/site.js          # thèmes, badges, carnet, terminal caché
+  - javascripts/exos.js          # exercices interactifs + couleur du cours
+  - javascripts/apps.js          # quiz, examen, flashcards, outils, accueil…
+  - javascripts/simu.js          # simulateur de terminal
+
+markdown_extensions:
+  - admonition                 # encadrés !!! note / tip / warning
+  - pymdownx.details           # encadrés repliables ??? (corrections d'exos)
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid        # schémas dessinés en texte
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.keys              # ++ctrl+alt+del++
+  - pymdownx.mark
+  - attr_list
+  - pymdownx.emoji:            # icônes :material-lan: etc.
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - md_in_html
+  - abbr                       # sigles : infobulle au survol
+  - pymdownx.snippets:
+      auto_append:
+        - includes/abreviations.md   # liste générée automatiquement
+  - tables
+  - toc:
+      permalink: true
+
+# ---- MENU (ordre des cours et des modules) ----
+# Pour ajouter un module : ajoute une ligne  - Titre: cours/<dossier>/<fichier>.md  sous son cours.
+nav:
+- Accueil: index.md
+- Cours:
+  - Microsoft 365 – Outils collaboratifs:
+    - cours/microsoft-365/index.md
+    - Module 1 – Découverte de Microsoft 365: cours/microsoft-365/m01-decouverte-m365.md
+    - Module 2 – Notions de base sur Word: cours/microsoft-365/m02-word.md
+    - Module 3 – Notions de base sur Excel: cours/microsoft-365/m03-excel.md
+    - Module 4 – Exploiter Outlook et savoir le dépanner: cours/microsoft-365/m04-outlook.md
+    - Module 5 – Exploiter Teams, SharePoint et OneDrive: cours/microsoft-365/m05-teams-sharepoint-onedrive.md
+  - Base des réseaux:
+    - cours/base-des-reseaux/index.md
+    - Module 1 – Le modèle OSI: cours/base-des-reseaux/m01-modele-osi.md
+    - Module 2 – Les unités informatiques: cours/base-des-reseaux/m02-unites-informatiques.md
+    - Module 3 – L'adressage IPv4: cours/base-des-reseaux/m03-adressage-ipv4.md
+    - Module 4 – La communication: cours/base-des-reseaux/m04-communication.md
+    - Module 5 – Les premières commandes: cours/base-des-reseaux/m05-premieres-commandes.md
+    - Module 6 – L'adressage IPv6: cours/base-des-reseaux/m06-adressage-ipv6.md
+    - TP – Passerelle par défaut sous Packet Tracer: cours/base-des-reseaux/tp-passerelle-packet-tracer.md
+  - Systèmes clients Microsoft:
+    - cours/systemes-clients-microsoft/index.md
+    - Module 1 – Les systèmes d'exploitation et Microsoft Windows 10: cours/systemes-clients-microsoft/m01-os-et-windows-10.md
+    - Module 2 – Installation de Windows 10: cours/systemes-clients-microsoft/m02-installation-windows-10.md
+    - Module additionnel – VMware Workstation: cours/systemes-clients-microsoft/m02b-vmware-workstation.md
+    - Module 3 – Interagir avec Windows 10: cours/systemes-clients-microsoft/m03-interagir-windows-10.md
+    - Module 4 – La gestion du stockage: cours/systemes-clients-microsoft/m04-gestion-stockage.md
+    - Module 5 – Les utilisateurs et les groupes: cours/systemes-clients-microsoft/m05-utilisateurs-groupes.md
+    - Module 6 – La sécurité NTFS et les ACL: cours/systemes-clients-microsoft/m06-ntfs-acl.md
+    - Module 7 – La gestion du réseau et du pare-feu: cours/systemes-clients-microsoft/m07-reseau-pare-feu.md
+    - Module 8 – Le partage de ressources: cours/systemes-clients-microsoft/m08-partage-ressources.md
+    - Module 9 – Les pilotes et les imprimantes: cours/systemes-clients-microsoft/m09-pilotes-imprimantes.md
+    - Module 10 – Maintenance du système: cours/systemes-clients-microsoft/m10-maintenance.md
+    - Module 11 – Plus loin avec PowerShell: cours/systemes-clients-microsoft/m11-powershell.md
+    - Module 12 – Introduction à la capture et au déploiement: cours/systemes-clients-microsoft/m12-capture-deploiement.md
+    - Module 13 – Les stratégies de groupe locales: cours/systemes-clients-microsoft/m13-strategies-groupe-locales.md
+  - Utilisation d'une distribution GNU/Linux:
+    - cours/utilisation-linux/index.md
+    - Module 1 – Introduction à Unix/Linux: cours/utilisation-linux/m01-introduction-unix-linux.md
+    - Module additionnel – VMware Workstation: cours/utilisation-linux/m01b-vmware-workstation.md
+    - Module 2 – Découverte du système d'exploitation Linux: cours/utilisation-linux/m02-decouverte-linux.md
+    - Module 3 – Découverte du shell et premières commandes: cours/utilisation-linux/m03-premieres-commandes.md
+    - Module 4 – Fichiers et dossiers sous Linux: cours/utilisation-linux/m04-fichiers-dossiers.md
+    - Module 5 – Utiliser des fichiers sous Linux: cours/utilisation-linux/m05-utiliser-fichiers.md
+    - Module 6 – Spécificités du shell Bash: cours/utilisation-linux/m06-specificites-bash.md
+    - Module 7 – Éditer du texte sous Linux: cours/utilisation-linux/m07-editer-texte.md
+    - Module 8 – Mécanismes avancés de Linux et Bash: cours/utilisation-linux/m08-mecanismes-avances.md
+  - Administration d'une distribution GNU/Linux:
+    - cours/administration-linux/index.md
+  - 'Mise en situation professionnelle : systèmes clients':
+    - cours/msp-systemes-clients/index.md
+  - Sensibilisation ITIL et Gestion de parc:
+    - cours/itil-gestion-de-parc/index.md
+  - Les infrastructures réseaux:
+    - cours/infrastructures-reseaux/index.md
+  - Services réseau en environnement Microsoft:
+    - cours/services-reseau-microsoft/index.md
+  - 'Mise en situation professionnelle : services réseau':
+    - cours/msp-services-reseau/index.md
+  - Initiation au scripting Bash:
+    - cours/scripting-bash/index.md
+  - Initiation à PowerShell:
+    - cours/powershell/index.md
+  - Automatisation et IA appliquées au support et au MCO:
+    - cours/automatisation-ia-mco/index.md
+  - Virtualisation de serveurs:
+    - cours/virtualisation-serveurs/index.md
+  - Services Cloud:
+    - cours/services-cloud/index.md
+  - Sauvegarde et Restauration:
+    - cours/sauvegarde-restauration/index.md
+  - Réseau et Sécurité:
+    - cours/reseau-et-securite/index.md
+  - Supervision:
+    - cours/supervision/index.md
+- Réviser:
+  - reviser/index.md
+  - Quiz: reviser/quiz.md
+  - Examen blanc: reviser/examen.md
+  - Flashcards: reviser/flashcards.md
+  - Fiches mémo:
+    - fiches/index.md
+    - Microsoft 365: fiches/microsoft-365.md
+    - Base des réseaux: fiches/base-des-reseaux.md
+    - Systèmes clients Microsoft: fiches/systemes-clients-microsoft.md
+    - Utilisation de Linux: fiches/utilisation-linux.md
+  - Commandes: reviser/commandes.md
+  - Glossaire: reviser/glossaire.md
+  - Simulateur: reviser/simulateur.md
+  - Outils réseau: reviser/outils.md
+  - Mon carnet de TP: reviser/carnet.md
+  - Badges: reviser/badges.md
+- Par statut: tags.md

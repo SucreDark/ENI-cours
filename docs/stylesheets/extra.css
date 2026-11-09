@@ -1,0 +1,128 @@
+/* ============================================================
+   Mise en forme du site "Mes cours ENI"
+   La couleur et le logo de chaque cours sont dans cours.css
+   ============================================================ */
+
+:root { --c: #3f51b5; }
+
+/* ---------- Badges de statut ---------- */
+.statut { display:inline-block; padding:.1rem .55rem; border-radius:1rem; font-size:.7rem; font-weight:600; }
+.statut.en-cours { background:#e3f2fd; color:#0d47a1; }
+.statut.a-venir  { background:#f3e5f5; color:#6a1b9a; }
+.statut.termine  { background:#e8f5e9; color:#1b5e20; }
+[data-md-color-scheme="slate"] .statut.en-cours { background:#0d47a1; color:#e3f2fd; }
+[data-md-color-scheme="slate"] .statut.a-venir  { background:#4a148c; color:#f3e5f5; }
+[data-md-color-scheme="slate"] .statut.termine  { background:#1b5e20; color:#e8f5e9; }
+
+/* ---------- Cartes de l'accueil ---------- */
+.md-typeset .grid.cards > ul > li { border-radius:.8rem; border-top:.25rem solid var(--md-accent-fg-color); transition:transform .15s, box-shadow .15s; }
+.md-typeset .grid.cards > ul > li:hover { transform:translateY(-2px); box-shadow:0 .4rem 1.2rem rgba(0,0,0,.15); }
+.md-typeset .grid.cards .lg { font-size:2.2em; }
+
+/* ---------- Bandeau du cours (logo + couleur) sur les pages de cours ---------- */
+body[data-cours] .md-content h1 {
+  display:flex; align-items:center; gap:.8rem;
+  color: var(--c); font-weight:700;
+  padding-bottom:.5rem; border-bottom:.2rem solid var(--c);
+}
+body[data-cours] .md-content h1::before {
+  content:""; flex:0 0 2.6rem; height:2.6rem; border-radius:.7rem;
+  background: var(--c) var(--c-icon) center / 62% no-repeat;
+  box-shadow:0 .2rem .6rem rgba(0,0,0,.2);
+}
+body[data-md-color-scheme="slate"][data-cours] .md-content h1 { color: color-mix(in srgb, var(--c) 55%, white); }
+
+/* Titres de sections : barre de couleur + fond teinté */
+body[data-cours] .md-typeset h2 {
+  padding:.35rem .7rem; border-left:.3rem solid var(--c); border-radius:.3rem;
+  background: color-mix(in srgb, var(--c) 10%, transparent);
+  font-weight:600;
+}
+body[data-cours] .md-typeset h3 { color: var(--c); font-weight:600; }
+body[data-md-color-scheme="slate"][data-cours] .md-typeset h3 { color: color-mix(in srgb, var(--c) 55%, white); }
+
+/* Mots en gras : couleur du cours */
+body[data-cours] .md-typeset strong { color: color-mix(in srgb, var(--c) 75%, var(--md-typeset-color)); }
+body[data-md-color-scheme="slate"][data-cours] .md-typeset strong { color: color-mix(in srgb, var(--c) 45%, white); }
+
+/* Surlignage ==texte== */
+.md-typeset mark { background: color-mix(in srgb, var(--c) 22%, transparent); color:inherit; padding:0 .2em; border-radius:.2rem; }
+
+/* ---------- Tableaux ---------- */
+.md-typeset table:not([class]) { border-radius:.5rem; overflow:hidden; border:none; box-shadow:0 .1rem .4rem rgba(0,0,0,.12); font-size:.72rem; }
+.md-typeset table:not([class]) th { background: var(--c); color:#fff; font-weight:600; }
+.md-typeset table:not([class]) tbody tr:nth-child(even) { background: color-mix(in srgb, var(--c) 6%, transparent); }
+.md-typeset table:not([class]) tbody tr:hover { background: color-mix(in srgb, var(--c) 14%, transparent); }
+.md-typeset table:not([class]) th strong { color:#fff !important; }
+
+/* ---------- Commandes façon Discord ---------- */
+/* code en ligne : `commande` */
+.md-typeset :not(pre) > code {
+  background:#2b2d31; color:#e3e5e8; border:1px solid #1e1f22;
+  border-radius:.3rem; padding:.1em .38em; font-size:.82em; word-break:break-word;
+}
+.md-typeset table:not([class]) th code { background:rgba(0,0,0,.25); border-color:transparent; }
+.md-typeset a > code { color:#8ab4ff; }
+/* blocs de code */
+body[data-md-color-scheme] {
+  --md-code-bg-color:#1e1f22;
+  --md-code-fg-color:#dbdee1;
+  --md-code-hl-color: rgba(255,255,255,.08);
+  --md-code-hl-keyword-color:#ff7ab2;
+  --md-code-hl-string-color:#a5d6a7;
+  --md-code-hl-number-color:#ffcb6b;
+  --md-code-hl-function-color:#82aaff;
+  --md-code-hl-constant-color:#f78c6c;
+  --md-code-hl-special-color:#c792ea;
+  --md-code-hl-name-color:#dbdee1;
+  --md-code-hl-operator-color:#89ddff;
+  --md-code-hl-punctuation-color:#a6accd;
+  --md-code-hl-comment-color:#7f8590;
+  --md-code-hl-generic-color:#7f8590;
+  --md-code-hl-variable-color:#f07178;
+}
+.md-typeset pre { border-radius:.5rem; }
+.md-typeset pre > code { font-size:.78rem; border-left:.25rem solid var(--c); border-radius:.5rem; }
+
+/* ---------- Encadrés ---------- */
+.md-typeset .admonition, .md-typeset details { border-radius:.5rem; box-shadow:0 .1rem .4rem rgba(0,0,0,.08); }
+
+/* ---------- Exercices interactifs ---------- */
+.exo-score {
+  display:flex; align-items:center; gap:.8rem; flex-wrap:wrap;
+  padding:.6rem .9rem; margin:1rem 0; border-radius:.6rem;
+  background: color-mix(in srgb, var(--c) 10%, transparent); border:1px solid color-mix(in srgb, var(--c) 35%, transparent);
+  font-size:.75rem; font-weight:600;
+}
+.exo-score .barre { flex:1 1 8rem; height:.5rem; border-radius:1rem; background: color-mix(in srgb, var(--c) 18%, transparent); overflow:hidden; }
+.exo-score .barre > span { display:block; height:100%; width:0; background:#43a047; transition:width .3s; }
+.exo-card {
+  margin:1rem 0; padding:.8rem 1rem; border-radius:.6rem;
+  border:1px solid var(--md-default-fg-color--lightest); border-left:.3rem solid var(--c);
+  background: var(--md-default-bg-color);
+}
+.exo-card.ok { border-left-color:#43a047; background: color-mix(in srgb, #43a047 7%, var(--md-default-bg-color)); }
+.exo-card.ko { border-left-color:#e53935; background: color-mix(in srgb, #e53935 6%, var(--md-default-bg-color)); }
+.exo-card > p:first-child { margin-top:0; }
+.exo-card textarea {
+  width:100%; min-height:2.6rem; resize:vertical; box-sizing:border-box;
+  font: .75rem/1.4 var(--md-code-font-family, monospace);
+  padding:.45rem .6rem; border-radius:.4rem;
+  border:1px solid var(--md-default-fg-color--lighter); background: var(--md-code-bg-color); color: var(--md-code-fg-color);
+}
+.exo-actions { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.5rem; align-items:center; }
+.exo-btn {
+  cursor:pointer; border:none; border-radius:.4rem; padding:.35rem .8rem; font-size:.7rem; font-weight:600;
+  background: var(--c); color:#fff;
+}
+.exo-btn:hover { filter:brightness(1.1); }
+.exo-btn.sec { background: var(--md-default-fg-color--lightest); color: var(--md-default-fg-color); }
+.exo-btn.ok { background:#43a047; } .exo-btn.ko { background:#e53935; }
+.exo-msg { font-size:.72rem; font-weight:600; }
+.exo-card details { margin:.6rem 0 0; }
+.exo-card details > summary { pointer-events:none; }
+.exo-card details > summary::after { display:none; }
+.exo-hidden { display:none !important; }
+
+/* Cases à cocher des TP cliquables */
+.md-typeset .task-list-control { cursor:pointer; }
