@@ -15,7 +15,7 @@ tags:
 
 *À remplir.*
 
-## 2. Lire du texte avec Linux
+## 2. Lire du texte avec Linux (+ démo « Lire des fichiers »)
 
 *À remplir.*
 
@@ -23,7 +23,7 @@ tags:
 
 *À remplir.*
 
-## 4. Les liens sous Unix/Linux : liens physiques
+## 4. Les liens sous Unix/Linux : liens physiques (+ démo « Les liens sous Linux »)
 
 *À remplir.*
 
@@ -35,3 +35,8 @@ tags:
 
 ??? success "Correction"
     *Réponse à remplir.*
+
+**TP** (à venir) :
+
+- [ ] TP lire des fichiers
+- [ ] TP les liens

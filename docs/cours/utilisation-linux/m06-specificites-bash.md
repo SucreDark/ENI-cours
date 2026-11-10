@@ -11,11 +11,19 @@ tags:
 !!! abstract "En bref"
     *À remplir : les 2-3 choses à retenir de ce module.*
 
-## 1. Première notion
+## 1. Effectuer des recherches
 
 *À remplir.*
 
-## 2. Deuxième notion
+## 2. Recherches avancées (+ démo « Des recherches sous Linux »)
+
+*À remplir.*
+
+## 3. Introduction aux expressions régulières (+ démo « Regex avec grep »)
+
+*À remplir.*
+
+## 4. La commande locate
 
 *À remplir.*
 
@@ -27,3 +35,7 @@ tags:
 
 ??? success "Correction"
     *Réponse à remplir.*
+
+**TP** (à venir) :
+
+- [ ] TP recherches et expressions régulières

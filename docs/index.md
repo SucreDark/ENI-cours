@@ -15,7 +15,7 @@ hide:
 </div>
 
 !!! tip "Cette semaine : Utilisation d'une distribution GNU/Linux"
-    09/11 → 13/11/2026 · J'en suis au **Module 4 – Fichiers et dossiers** (prochaine étape : manipuler des dossiers)
+    09/11 → 13/11/2026 · Module 4 terminé · j'attaque le **Module 5 – Utiliser des fichiers sous Linux**
     [:octicons-arrow-right-24: Ouvrir le cours](cours/utilisation-linux/index.md)
 
 ## Ma progression
