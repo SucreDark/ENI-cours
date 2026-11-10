@@ -8,7 +8,7 @@ tags:
 <span class="statut en-cours">En cours</span> · :material-calendar: 09/11 → 13/11/2026
 
 !!! tip "Où j'en suis"
-    Module 4, prochaine étape : **Manipuler des dossiers**.
+    Module 4 terminé, prochaine étape : **Module 5 – Utiliser des fichiers sous Linux**.
 
 ## Modules du cours
 
@@ -18,7 +18,7 @@ tags:
 | [Module additionnel – VMware Workstation](m01b-vmware-workstation.md) | <span class="statut termine">Terminé</span> |
 | [Module 2 – Découverte du système d'exploitation Linux](m02-decouverte-linux.md) | <span class="statut termine">Terminé</span> |
 | [Module 3 – Découverte du shell et premières commandes](m03-premieres-commandes.md) | <span class="statut termine">Terminé</span> |
-| [Module 4 – Fichiers et dossiers sous Linux](m04-fichiers-dossiers.md) | <span class="statut en-cours">En cours</span> |
+| [Module 4 – Fichiers et dossiers sous Linux](m04-fichiers-dossiers.md) | <span class="statut termine">Terminé</span> |
 | [Module 5 – Utiliser des fichiers sous Linux](m05-utiliser-fichiers.md) | <span class="statut a-venir">À venir</span> |
 | [Module 6 – Spécificités du shell Bash](m06-specificites-bash.md) | <span class="statut a-venir">À venir</span> |
 | [Module 7 – Éditer du texte sous Linux](m07-editer-texte.md) | <span class="statut a-venir">À venir</span> |
