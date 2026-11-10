@@ -10,7 +10,7 @@ hide:
   <div class="barre-fenetre"><i></i><i></i><i></i><span>user@eni: ~/formation-eni</span></div>
   <div class="ligne"><span class="p">user@eni:~$</span> cd ~/formation-eni && cat BIENVENUE.txt</div>
   <span class="typed" data-text="Mes cours ENI">Mes cours ENI</span>
-  <div class="ligne sortie">18 cours · déjà faits, en cours et à venir · exercices corrigés en fin de page</div>
+  <div class="ligne sortie">18 cours au programme : 3 terminés · 1 en cours · 14 à venir · exercices corrigés en fin de page</div>
   <div class="ligne"><span class="p">user@eni:~$</span> <span class="sortie">stage le 05/04/2027 · évaluations finales le 14/06/2027</span></div>
 </div>
 
