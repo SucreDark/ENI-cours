@@ -91,6 +91,7 @@ flowchart TD
 | `mv -i` | Interactif : demande la confirmation |
 | `cp [-fipr] <source> <cible>` | Copier des fichiers ou dossiers |
 | `rm [-frvi] <fichier>` | Supprimer un ou plusieurs fichiers (définitivement, pas de corbeille) |
+| `cp -r` · `rm -r` | Récursif : vient envelopper tout le contenu de la sélection |
 | `rmdir <dossier>` | Ne supprime que des dossiers **vides** |
 
 - `mv` avec un chemin de dépôt **mal écrit ou inexistant** : la commande **renomme** simplement le fichier avec le nom écrit derrière.
