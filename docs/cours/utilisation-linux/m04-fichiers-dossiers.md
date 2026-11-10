@@ -78,6 +78,7 @@ flowchart TD
 | `ls -d` | Traite un répertoire comme un fichier (affiche le dossier, pas son contenu) |
 | `ls -r` | Inverse l'ordre d'un tri |
 | `ls -t` | Tri par date de modification |
+| `ls -R <dossier>` | Pour vérifier l'arborescence de nos dossiers |
 
 ## 5. Manipuler des fichiers
 
