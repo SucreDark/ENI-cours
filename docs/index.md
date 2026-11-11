@@ -15,7 +15,7 @@ hide:
 </div>
 
 !!! tip "Cette semaine : Utilisation d'une distribution GNU/Linux"
-    09/11 → 13/11/2026 · Module 5 terminé · j'attaque le **Module 6 – Spécificités du shell Bash**
+    09/11 → 13/11/2026 · J'en suis au **Module 6 – Spécificités du shell Bash** (prochaine étape : la commande locate)
     [:octicons-arrow-right-24: Ouvrir le cours](cours/utilisation-linux/index.md)
 
 ## Ma progression
