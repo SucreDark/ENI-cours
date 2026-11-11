@@ -67,6 +67,9 @@ L'**inode** contient des informations telles que :
 | `n` | Aller à l'occurrence suivante |
 | `q` | Quitter |
 
+!!! warning "Erreur dans le support du cours"
+    Le support indique « `G` = début » et « `gg` = fin » : c'est **inversé**. En vrai, `G` va à la **fin** du fichier et `g` / `gg` au **début** (vérifiable avec `less /etc/passwd`).
+
 ## 3. Les liens sous Unix/Linux : liens symboliques
 
 | Commande | Rôle |
