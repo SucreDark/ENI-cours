@@ -12,6 +12,8 @@
 #  3. Après le build : élargit les séparateurs de mots de la recherche
 #     (parenthèses, virgules, points, apostrophes…) -> « casse » est trouvé
 #     aussi dans « (casse, taille) » ou « l'héritage » -> « héritage »
+#     et redécoupe les tableaux ligne par ligne (sinon la recherche les voit
+#     comme un seul bloc et l'extrait affiché coupe les lignes n'importe où)
 #  4. Après le build : écrit site/sw.js (service worker) avec la liste de tous
 #     les fichiers du site -> l'appli installée marche sans réseau
 # ============================================================
@@ -58,6 +60,7 @@ def _tete_appli(racine):
 def on_post_page(output, page, config, **kwargs):
     profondeur = page.file.dest_uri.count("/")
     racine = "../" * profondeur
+    output = output.replace(MARQUE, "").replace(FIN, "")  # repères de recherche : déjà indexés, on les retire de la page
     if SHIM_WEB in output:
         output = output.replace(SHIM_WEB, racine + "javascripts/iframe-worker-shim.js")
     if "</head>" in output:
@@ -101,6 +104,32 @@ self.addEventListener("fetch", e => {
 SEPARATEUR = r"""[\s\-,:;!?=\[\]()"'/«»|.`*<>{}]+"""
 
 
+MARQUE = "\u2063"  # caractère invisible posé au début de chaque ligne de tableau
+FIN = "\u2064"     # caractère invisible posé à la fin de chaque tableau
+
+
+def on_page_content(html, **kwargs):
+    # repère les lignes de tableau pour la recherche (invisible à l'écran)
+    html = re.sub(r"<tr>(\s*)<td([^>]*)>", lambda m: "<tr>" + m.group(1) + "<td" + m.group(2) + ">" + MARQUE, html)
+    return re.sub(r"(</td>\s*</tr>\s*</tbody>\s*</table>)", lambda m: FIN + m.group(1), html)
+
+
+def _lignes_tableaux(texte):
+    # Dans l'index, un tableau devient un seul bloc de texte : on remet chaque
+    # ligne dans son propre <p> pour que l'extrait affiché soit la bonne ligne.
+    if MARQUE not in texte:
+        return texte.replace(FIN, "")
+    sortie = []
+    for bout in texte.split(FIN):  # chaque bout = [avant + en-tête] lignes… (fin d'un tableau)
+        morceaux = bout.split(MARQUE)
+        res = morceaux[0].rstrip()
+        if len(morceaux) > 1:  # retire l'en-tête du tableau (« Commande Rôle ») resté en vrac
+            res = re.sub(r"(^|>)[^<>]*$", r"\1", res)
+        res += "".join(" <p>" + l.strip() + "</p>" for l in morceaux[1:])
+        sortie.append(res)
+    return " ".join(sortie)
+
+
 def _recherche(site):
     # le plugin search écrit search_index.json (et offline : search_index.js) ;
     # on remplace juste le séparateur de mots dans leur config
@@ -114,6 +143,8 @@ def _recherche(site):
             continue
         d = json.loads(txt[len(prefixe):].rstrip().rstrip(";"))
         d["config"]["separator"] = SEPARATEUR
+        for doc in d.get("docs", []):
+            doc["text"] = _lignes_tableaux(doc.get("text", ""))
         with open(p, "w", encoding="utf-8") as fh:
             fh.write(prefixe + json.dumps(d, ensure_ascii=False, separators=(",", ":")))
 
