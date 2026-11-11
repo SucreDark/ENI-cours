@@ -5,13 +5,11 @@ tags:
 
 # Module 6 – Spécificités du shell Bash
 
-!!! warning "Module en cours"
-    Fait : recherches (`grep`, pipe), recherches avancées (`find`), regex, TP 1. **Prochaine étape : la commande locate.**
-
 !!! abstract "En bref"
     - Le **pipe** `|` envoie le résultat d'une commande à la suivante : `ls | grep .txt | wc -l`.
-    - `grep` cherche du texte (`-i -e -v -n -r`) · `find` cherche des fichiers, **nativement récursif** (`-type -name -user -group -size -mtime`).
+    - `grep` cherche du texte (`-i -e -v -n -r -l -s`) · `find` cherche des fichiers, **nativement récursif** (`-type -name -user -group -size -mtime`).
     - Actions de `find` : `-print`, `-printf`, `-exec … {} \;`, `-ok`.
+    - `locate` : recherche rapide dans les noms et chemins des fichiers (pas le contenu).
     - **Regex** : modèle de recherche avec règles et caractères spéciaux (`^`, `[A-Z]`, `\d`, `\w`…), utilisé par grep, sed, awk, vi.
 
 ## 1. Effectuer des recherches
@@ -36,6 +34,8 @@ ls | grep .txt | wc -l
 | `grep -v` | Afficher les lignes qui **ne correspondent pas** |
 | `grep -n` | Afficher les numéros de ligne |
 | `grep -r` | Recherche récursive (cherche aussi dans les sous-dossiers) |
+| `grep -l` | Afficher seulement les noms des fichiers qui contiennent le motif |
+| `grep -s` | Enlever du visuel les messages d'erreur, identique à `2>/dev/null` |
 
 ## 2. Recherches avancées (`find`)
 
@@ -142,7 +142,9 @@ find /home -type f -exec ls -l {} \;
 
 ## 4. La commande locate
 
-*À remplir.*
+| Commande | Rôle |
+|---|---|
+| `locate <mot>` | Recherche **rapide** par mot clé dans les **noms et chemins** des fichiers, mais **pas dans leur contenu** |
 
 ---
 
@@ -198,6 +200,11 @@ find /home -type f -exec ls -l {} \;
 ??? success "Correction"
     `grep '^[A-Z]' noms.txt` · `grep '^[[:upper:]]' noms.txt`
 
+**Exercice 11** : tu cherches un fichier dont le nom contient « passwd », puis les fichiers dont le **contenu** contient « root ». Quelle commande pour chaque cas ?
+
+??? success "Correction"
+    `locate passwd` (noms et chemins, rapide) · `grep -r root <dossier>` (contenu ; `locate` ne cherche pas dans le contenu)
+
 ---
 
 ## TP 1 – Recherches et regex
@@ -220,7 +227,7 @@ find /home -type f -exec ls -l {} \;
 **Exercice TP 4** : liste les fichiers de `/etc` contenant `localhost`, sans inclure les sous-répertoires.
 
 ??? success "Correction"
-    `grep -sl localhost /etc/*` (`-l` : affiche seulement le nom des fichiers · `-s` : masque les messages d'erreur)
+    `grep -sl localhost /etc/*` (`-l` : seulement les noms des fichiers · `-s` : sans les messages d'erreur)
 
 **Exercice TP 5** : recherche tous les fichiers standards commençant par `ho` à partir de `/etc`.
 

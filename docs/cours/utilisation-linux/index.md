@@ -8,7 +8,7 @@ tags:
 <span class="statut en-cours">En cours</span> · :material-calendar: 09/11 → 13/11/2026
 
 !!! tip "Où j'en suis"
-    Module 6, prochaine étape : **La commande locate**.
+    Module 6 terminé, prochaine étape : **Module 7 – Éditer du texte sous Linux**.
 
 ## Modules du cours
 
@@ -20,6 +20,6 @@ tags:
 | [Module 3 – Découverte du shell et premières commandes](m03-premieres-commandes.md) | <span class="statut termine">Terminé</span> |
 | [Module 4 – Fichiers et dossiers sous Linux](m04-fichiers-dossiers.md) | <span class="statut termine">Terminé</span> |
 | [Module 5 – Utiliser des fichiers sous Linux](m05-utiliser-fichiers.md) | <span class="statut termine">Terminé</span> |
-| [Module 6 – Spécificités du shell Bash](m06-specificites-bash.md) | <span class="statut en-cours">En cours</span> |
+| [Module 6 – Spécificités du shell Bash](m06-specificites-bash.md) | <span class="statut termine">Terminé</span> |
 | [Module 7 – Éditer du texte sous Linux](m07-editer-texte.md) | <span class="statut a-venir">À venir</span> |
 | [Module 8 – Mécanismes avancés de Linux et Bash](m08-mecanismes-avances.md) | <span class="statut a-venir">À venir</span> |
