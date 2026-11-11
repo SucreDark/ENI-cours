@@ -9,7 +9,10 @@
 #       jour, le navigateur recharge la nouvelle version (pas de vieux cache)
 #     - ajoute ce qu'il faut pour l'appli téléphone (PWA) : manifeste, icônes,
 #       couleur de barre, enregistrement du service worker
-#  3. Après le build : écrit site/sw.js (service worker) avec la liste de tous
+#  3. Après le build : élargit les séparateurs de mots de la recherche
+#     (parenthèses, virgules, points, apostrophes…) -> « casse » est trouvé
+#     aussi dans « (casse, taille) » ou « l'héritage » -> « héritage »
+#  4. Après le build : écrit site/sw.js (service worker) avec la liste de tous
 #     les fichiers du site -> l'appli installée marche sans réseau
 # ============================================================
 import hashlib, json, os, re, sys
@@ -95,8 +98,29 @@ self.addEventListener("fetch", e => {
 """
 
 
+SEPARATEUR = r"""[\s\-,:;!?=\[\]()"'/«»|.`*<>{}]+"""
+
+
+def _recherche(site):
+    # le plugin search écrit search_index.json (et offline : search_index.js) ;
+    # on remplace juste le séparateur de mots dans leur config
+    for nom, prefixe in (("search_index.json", ""), ("search_index.js", "var __index = ")):
+        p = os.path.join(site, "search", nom)
+        if not os.path.exists(p):
+            continue
+        with open(p, encoding="utf-8") as fh:
+            txt = fh.read()
+        if not txt.startswith(prefixe):
+            continue
+        d = json.loads(txt[len(prefixe):].rstrip().rstrip(";"))
+        d["config"]["separator"] = SEPARATEUR
+        with open(p, "w", encoding="utf-8") as fh:
+            fh.write(prefixe + json.dumps(d, ensure_ascii=False, separators=(",", ":")))
+
+
 def on_post_build(config, **kwargs):
     site = config["site_dir"]
+    _recherche(site)
     fichiers, h = [], hashlib.md5()
     for dossier, _, noms in os.walk(site):
         for n in sorted(noms):
