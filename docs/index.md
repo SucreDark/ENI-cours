@@ -15,7 +15,7 @@ hide:
 </div>
 
 !!! tip "Cette semaine : Utilisation d'une distribution GNU/Linux"
-    09/11 → 13/11/2026 · Module 6 terminé · j'attaque le **Module 7 – Éditer du texte sous Linux**
+    09/11 → 13/11/2026 · Module 7 terminé · j'attaque le **Module 8 – Mécanismes avancés de Linux et Bash**
     [:octicons-arrow-right-24: Ouvrir le cours](cours/utilisation-linux/index.md)
 
 ## Ma progression
