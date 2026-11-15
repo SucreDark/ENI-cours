@@ -1,14 +1,14 @@
 ---
 tags:
-  - En cours
+  - Terminé
 ---
 
 # Utilisation d'une distribution GNU/Linux
 
-<span class="statut en-cours">En cours</span> · :material-calendar: 09/11 → 13/11/2026
+<span class="statut termine">Terminé</span> · :material-calendar: 09/11 → 13/11/2026
 
 !!! tip "Où j'en suis"
-    Module 7 terminé, prochaine étape : **Module 8 – Mécanismes avancés de Linux et Bash**.
+    Cours **terminé** ✅ (8 modules + module additionnel). Prochain cours : **Administration d'une distribution GNU/Linux** (16/11).
 
 ## Modules du cours
 
@@ -22,4 +22,4 @@ tags:
 | [Module 5 – Utiliser des fichiers sous Linux](m05-utiliser-fichiers.md) | <span class="statut termine">Terminé</span> |
 | [Module 6 – Spécificités du shell Bash](m06-specificites-bash.md) | <span class="statut termine">Terminé</span> |
 | [Module 7 – Éditer du texte sous Linux](m07-editer-texte.md) | <span class="statut termine">Terminé</span> |
-| [Module 8 – Mécanismes avancés de Linux et Bash](m08-mecanismes-avances.md) | <span class="statut a-venir">À venir</span> |
+| [Module 8 – Mécanismes avancés de Linux et Bash](m08-mecanismes-avances.md) | <span class="statut termine">Terminé</span> |

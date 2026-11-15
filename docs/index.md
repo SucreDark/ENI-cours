@@ -10,13 +10,13 @@ hide:
   <div class="barre-fenetre"><i></i><i></i><i></i><span>user@eni: ~/formation-eni</span></div>
   <div class="ligne"><span class="p">user@eni:~$</span> cd ~/formation-eni && cat BIENVENUE.txt</div>
   <span class="typed" data-text="Mes cours ENI">Mes cours ENI</span>
-  <div class="ligne sortie">18 cours au programme : 3 terminés · 1 en cours · 14 à venir · exercices corrigés en fin de page</div>
+  <div class="ligne sortie">18 cours au programme : 4 terminés · 14 à venir · exercices corrigés en fin de page</div>
   <div class="ligne"><span class="p">user@eni:~$</span> <span class="sortie">stage le 05/04/2027 · évaluations finales le 14/06/2027</span></div>
 </div>
 
-!!! tip "Cette semaine : Utilisation d'une distribution GNU/Linux"
-    09/11 → 13/11/2026 · Module 7 terminé · j'attaque le **Module 8 – Mécanismes avancés de Linux et Bash**
-    [:octicons-arrow-right-24: Ouvrir le cours](cours/utilisation-linux/index.md)
+!!! tip "Prochain cours : Administration d'une distribution GNU/Linux"
+    16/11 → 27/11/2026 · Utilisation d'une distribution GNU/Linux **terminé** ✅
+    [:octicons-arrow-right-24: Ouvrir le cours](cours/administration-linux/index.md)
 
 ## Ma progression
 
@@ -52,7 +52,7 @@ hide:
 
 -   :fontawesome-brands-linux:{ .lg style="color:#e65100" } **Utilisation d'une distribution GNU/Linux**
 
-    <span class="statut en-cours">En cours</span> · 09/11 → 13/11/2026
+    <span class="statut termine">Terminé</span> · 09/11 → 13/11/2026
 
     [:octicons-arrow-right-24: Ouvrir](cours/utilisation-linux/index.md)
 
@@ -149,7 +149,7 @@ hide:
 | Semaine 1 | [Microsoft 365 – Outils collaboratifs](cours/microsoft-365/index.md) | <span class="statut termine">Terminé</span> |
 | Semaine 2 | [Base des réseaux](cours/base-des-reseaux/index.md) | <span class="statut termine">Terminé</span> |
 | Semaines 3 et 4 | [Systèmes clients Microsoft](cours/systemes-clients-microsoft/index.md) | <span class="statut termine">Terminé</span> |
-| 09/11 → 13/11/2026 | [Utilisation d'une distribution GNU/Linux](cours/utilisation-linux/index.md) | <span class="statut en-cours">En cours</span> |
+| 09/11 → 13/11/2026 | [Utilisation d'une distribution GNU/Linux](cours/utilisation-linux/index.md) | <span class="statut termine">Terminé</span> |
 | 16/11 → 27/11/2026 | [Administration d'une distribution GNU/Linux](cours/administration-linux/index.md) | <span class="statut a-venir">À venir</span> |
 | 30/11 → 04/12/2026 | [Mise en situation professionnelle : systèmes clients](cours/msp-systemes-clients/index.md) | <span class="statut a-venir">À venir</span> |
 | 07/12 → 18/12/2026 | [Sensibilisation ITIL et Gestion de parc](cours/itil-gestion-de-parc/index.md) | <span class="statut a-venir">À venir</span> |
