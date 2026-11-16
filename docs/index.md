@@ -15,7 +15,7 @@ hide:
 </div>
 
 !!! tip "Cette semaine : Administration d'une distribution GNU/Linux"
-    16/11 → 27/11/2026 · J'en suis au **Module 2 – Installation d'une distribution Debian** (prochaine étape : démonstration partie 2)
+    16/11 → 27/11/2026 · **Modules 1 à 3 terminés** (prochaine étape : module 4)
     [:octicons-arrow-right-24: Ouvrir le cours](cours/administration-linux/index.md)
 
 ## Ma progression

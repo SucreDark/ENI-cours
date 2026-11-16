@@ -5,9 +5,6 @@ tags:
 
 # Module 2 – Installation d'une distribution Debian
 
-!!! note "Module en cours"
-    Fait jusqu'à la démonstration partie 1. Reste : démonstration partie 2 et TP.
-
 !!! abstract "En bref"
     - Installation depuis un **CD-ROM** ou une **clé USB** (préparée avec Ventoy, balenaEtcher, Rufus, UNetbootin).
     - Parc de machines : **FAI** (installation sans intervention), CD personnalisé pré-configuré, outils de **clonage** (FOG, Symantec Ghost, Acronis True Image…).
