@@ -2,6 +2,8 @@
 #  Hooks MkDocs (déclarés dans mkdocs.yml, section hooks:)
 #  1. Avant chaque build : régénère les données des outils de révision
 #     (quiz, flashcards, commandes, glossaire, fiches mémo) -> tools/gen_data.py
+#  1b. Menu : une page de module posée dans docs/cours/<cours>/ apparaît
+#     toute seule dans le menu du cours (pas besoin de toucher mkdocs.yml)
 #  2. Sur chaque page :
 #     - remplace le script iframe-worker chargé depuis internet par la copie
 #       locale -> la recherche marche hors ligne
@@ -29,6 +31,31 @@ _empreintes = {}
 def on_pre_build(config, **kwargs):
     gen_data.generer()
     _empreintes.clear()
+
+
+def on_nav(nav, config, files, **kwargs):
+    from mkdocs.structure.nav import Section, _add_previous_and_next_links, _get_by_type
+    from mkdocs.structure.pages import Page
+    dans_nav = {p.file.src_uri for p in nav.pages}
+    ajout = False
+    for sec in _get_by_type(nav.items, Section):
+        idx = [c for c in sec.children if isinstance(c, Page) and re.fullmatch(r"cours/[^/]+/index\.md", c.file.src_uri)]
+        if not idx:
+            continue
+        cid = idx[0].file.src_uri.split("/")[1]
+        nouveaux = sorted((f for f in files.documentation_pages()
+                           if re.fullmatch(rf"cours/{re.escape(cid)}/[^/]+\.md", f.src_uri)
+                           and not f.src_uri.endswith("/index.md") and f.src_uri not in dans_nav),
+                          key=lambda f: f.src_uri)
+        for f in nouveaux:
+            pg = Page(gen_data.titre_h1(f.abs_src_path), f, config)
+            pg.parent = sec
+            sec.children.append(pg)
+            ajout = True
+    if ajout:
+        nav.pages = _get_by_type(nav.items, Page)
+        _add_previous_and_next_links(nav.pages)
+    return nav
 
 
 def _empreinte(config, chemin):

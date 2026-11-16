@@ -57,8 +57,25 @@ def lire_nav():
                         (mt, f), = s.items()
                         cid = f.split("/")[1]
                         mods.append((f, mt))
+                connus = {f for f, _ in mods}
+                mods += [m for m in modules_hors_nav(cid) if m[0] not in connus]
                 res.append((cid, titre, mods))
     return res
+
+def titre_h1(path):
+    for l in open(path, encoding="utf-8"):
+        if l.startswith("# "):
+            return l[2:].strip()
+    return os.path.splitext(os.path.basename(path))[0]
+
+def modules_hors_nav(cid):
+    """Pages de module ajoutées dans docs/cours/<cid>/ sans être dans le nav: de mkdocs.yml
+    (triées par nom de fichier, titre = le titre # de la page)."""
+    d = os.path.join(DOCS, "cours", cid)
+    if not os.path.isdir(d):
+        return []
+    return [(f"cours/{cid}/{n}", titre_h1(os.path.join(d, n)))
+            for n in sorted(os.listdir(d)) if n.endswith(".md") and n != "index.md"]
 
 def sans_front_matter(txt):
     return re.sub(r"\A---\n.*?\n---\n", "", txt, flags=re.S)
