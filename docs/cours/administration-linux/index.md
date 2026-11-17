@@ -10,7 +10,7 @@ tags:
 2 semaines.
 
 !!! tip "Où j'en suis"
-    Modules 1 à 4 terminés, prochaine étape : **Module 5**.
+    Modules 1 à 5 terminés, prochaine étape : **Module 6**.
 
 ## Modules du cours
 
@@ -20,3 +20,4 @@ tags:
 | [Module 2 – Installation d'une distribution Debian](m02-installation-debian.md) | <span class="statut termine">Terminé</span> |
 | [Module 3 – Démarrage d'une distribution Debian](m03-demarrage-debian.md) | <span class="statut termine">Terminé</span> |
 | [Module 4 – Debian en mode maintenance](m04-mode-maintenance.md) | <span class="statut termine">Terminé</span> |
+| [Module 5 – Gestion du réseau](m05-gestion-reseau.md) | <span class="statut termine">Terminé</span> |
