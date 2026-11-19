@@ -10,7 +10,7 @@ tags:
 2 semaines.
 
 !!! tip "Où j'en suis"
-    Modules 1 à 5 terminés, prochaine étape : **Module 6**.
+    Modules 1 à 8 terminés, prochaine étape : **Module 9**.
 
 ## Modules du cours
 
@@ -21,3 +21,6 @@ tags:
 | [Module 3 – Démarrage d'une distribution Debian](m03-demarrage-debian.md) | <span class="statut termine">Terminé</span> |
 | [Module 4 – Debian en mode maintenance](m04-mode-maintenance.md) | <span class="statut termine">Terminé</span> |
 | [Module 5 – Gestion du réseau](m05-gestion-reseau.md) | <span class="statut termine">Terminé</span> |
+| [Module 6 – Gestion des paquets logiciels](m06-gestion-paquets.md) | <span class="statut termine">Terminé</span> |
+| [Module 7 – Gestion des espaces de stockage](m07-espaces-stockage.md) | <span class="statut termine">Terminé</span> |
+| [Module 8 – Gestion avancée des espaces de stockage – LVM](m08-lvm.md) | <span class="statut termine">Terminé</span> |
