@@ -10,7 +10,7 @@ tags:
 2 semaines.
 
 !!! tip "Où j'en suis"
-    Modules 1 à 8 terminés, prochaine étape : **Module 9**.
+    Modules 1 à 9 terminés, prochaine étape : **Module 10**.
 
 ## Modules du cours
 
@@ -24,3 +24,4 @@ tags:
 | [Module 6 – Gestion des paquets logiciels](m06-gestion-paquets.md) | <span class="statut termine">Terminé</span> |
 | [Module 7 – Gestion des espaces de stockage](m07-espaces-stockage.md) | <span class="statut termine">Terminé</span> |
 | [Module 8 – Gestion avancée des espaces de stockage – LVM](m08-lvm.md) | <span class="statut termine">Terminé</span> |
+| [Module 9 – Gestion des espaces de stockage – File System](m09-systemes-fichiers.md) | <span class="statut termine">Terminé</span> |
