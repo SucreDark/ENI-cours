@@ -15,7 +15,7 @@ hide:
 </div>
 
 !!! tip "Cette semaine : Administration d'une distribution GNU/Linux"
-    16/11 → 27/11/2026 · **Modules 1 à 9 terminés** (prochaine étape : module 10)
+    16/11 → 27/11/2026 · **Modules 1 à 10 terminés** (prochaine étape : module 11)
     [:octicons-arrow-right-24: Ouvrir le cours](cours/administration-linux/index.md)
 
 ## Ma progression
