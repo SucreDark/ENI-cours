@@ -83,7 +83,7 @@ Exemple : `chmod g+w,o-rx /data/commun`
 | Méthode | Exemple | Résultat |
 |---|---|---|
 | Octale | `chmod 770 /data/commun` | `rwxrwx---` |
-| Récursive | `chmod -R g+w,o+rw /data/commun` | Sur le dossier et tout son contenu |
+| Récursive | `chmod -R g+w,o-rw /data/commun` | Sur le dossier et tout son contenu |
 
 !!! warning "Attention"
     `-R` modifie aussi **tous les fichiers et sous-dossiers** à l'intérieur.

@@ -1,16 +1,16 @@
 ---
 tags:
-  - En cours
+  - Terminé
 ---
 
 # Administration d'une distribution GNU/Linux
 
-<span class="statut en-cours">En cours</span> · :material-calendar: 16/11 → 27/11/2026
+<span class="statut termine">Terminé</span> · :material-calendar: 16/11 → 27/11/2026
 
 2 semaines.
 
 !!! tip "Où j'en suis"
-    Modules 1 à 11 terminés, prochaine étape : **Module 12**.
+    Cours **terminé** ✅ (12 modules). Prochain cours : **Mise en situation professionnelle : systèmes clients** (30/11).
 
 ## Modules du cours
 
@@ -27,3 +27,4 @@ tags:
 | [Module 9 – Gestion des espaces de stockage – File System](m09-systemes-fichiers.md) | <span class="statut termine">Terminé</span> |
 | [Module 10 – Gestion des utilisateurs et des groupes](m10-utilisateurs-groupes.md) | <span class="statut termine">Terminé</span> |
 | [Module 11 – Droits sur les fichiers et répertoires](m11-droits.md) | <span class="statut termine">Terminé</span> |
+| [Module 12 – Maintenance d'un système en production](m12-maintenance-production.md) | <span class="statut termine">Terminé</span> |
